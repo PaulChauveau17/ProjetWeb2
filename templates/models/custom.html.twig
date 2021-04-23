@@ -1,12 +1,13 @@
 {% extends 'models/base.html.twig' %}
 
 {# On suppose que chaque action fournit seulement le nom de son controller. #}
-{% block title %}Hello! {{ controller_name }}{% endblock %}
+{% block title %}Hello from {{ controller_name }}!{% endblock %}
 
 {% block body %} {# redéfinition du bloc body de base.html.twig #}
 
+    {# Est-ce nécessaire de pouvoir overrides le menu ? -> oui, pour l'inclusion de controller. #}
     <h1>{% block menu_title %}Incredible menu title{% endblock %}</h1>
-    {% block menu_content %} {# TODO: inclusion de controller #} {% endblock %}
+    {% block menu_content %} #}{# TODO: inclusion de controller #}{# {% endblock %}
     
 
     {# On ne créé pas de bloc ici car on affichera toujours les messages flash dans les vues filles. #}
@@ -21,6 +22,7 @@
         {% endfor %}
     </div>
 
+    {# Est-ce nécessaire de pouvoir overrides la vue ? -> oui, dans (quasiment) tous les twigs. #}
     <div id="view">
         <h1>{% block view_title %}Explicit view title{% endblock %}</h1>
         {% block view_content %}Good luck !{% endblock %}
@@ -32,9 +34,11 @@
         {% block links_content %}Some links{% endblock %}
     </div>#}
 
+    {# Est-ce nécessaire de pouvoir overrides le footer ? -> à priori non. #}
     <div id="footer">
-        <h1>{% block footer_title %}Amazing footer title{% endblock %}</h1>
-        {% block footer %}Made with love by Oscar Romestant and Paul Chauveau.{% endblock %}
+        <h1>Our great footer</h1>
+        <img src="../../img/footer/cute_boii.jpg" alt="a cute boy" width="500" height="332">
+        <br>Made with love by Oscar Romestant and Paul Chauveau.
     </div>
 
 {% endblock %} {# fin de la redéfinition du bloc body de base.html.twig #}
