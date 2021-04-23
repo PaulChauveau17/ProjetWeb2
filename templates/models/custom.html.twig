@@ -1,0 +1,46 @@
+{% extends 'models/base.html.twig' %}
+
+{# On suppose que chaque action fournit le nom de son controller et son nom interne. #}
+{% block title %}Hello {{ controller_name }}{% endblock %}
+{# Twig refuse de nommer 2 blocs (même dans des sur-blocs différents) de la même manière car il y a des ambiguités sinon. #}
+{# Code fait avec Gilles S. qui préfére ne pas faire de sous blocs. #}
+{# Code de la division en dehors du bloc : on aura toujours cette section même si elle est vide mais osef. #}
+
+{% block body %}
+
+    <h1>{% block menu_title %}Incredible menu title{% endblock %}</h1>
+    {% block menu_content %} {{ render(controller('App\\Controller\\ViewController::menuAction')) }} {% endblock %}
+    {# TODO: faire de l'inclusion de controller pour que le twig puisse filer les données de la DB -> user connecté ou non#}
+
+    {# On ne créé pas de block ici car on ne va pas redéfinir ça dans les vues filles#}
+    <div id="flash">
+        {#{% dump(app.session.flashBag) %}#}
+        <h1>Flash messages</h1>
+        {% for label, messages in app.session.flashbag.all %}
+            <h2>{{ label }}</h2>
+            {% for msg in messages %}
+                <li>{{ msg }}</li>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <div id="view">
+        <h1>{% block view_title %}Explicit view title{% endblock %}</h1>
+        {% block view_content %}
+            action_intern_name == {{ action_intern_name }}
+            <br>Good luck !
+        {% endblock %}
+    </div>
+
+    {#<div id="links">
+        <h1>{% block links_title %}Outstanding links title{% endblock %}</h1>
+        {% block links_content %}Some links{% endblock %}
+    </div>#}
+
+    <div id="footer">
+        <h1>{% block footer_title %}Amazing footer title{% endblock %}</h1>
+        {% block footer %}Made with love by Oscar Romestant and Paul Chauveau.{% endblock %}
+    </div>
+
+{% endblock %}
+
