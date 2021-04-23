@@ -22,7 +22,7 @@ class TestController extends AbstractController
         $this->addFlash('error', 'an error message');
         $this->addFlash('toto', 'a toto-message');
 
-        return $this->render('models/custom.html.twig', [
+        return $this->render('test/test_index.html.twig', [
             'controller_name' => 'TestController',
         ]);
     }
