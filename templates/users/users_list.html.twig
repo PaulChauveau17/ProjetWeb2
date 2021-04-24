@@ -1,0 +1,34 @@
+{% extends 'models/custom.html.twig' %}
+
+{% block view_title %}Display of users{% endblock %}
+
+{% block view_content %}
+    <p>
+        <ul>
+        {% for user in users %}
+            <li>
+                login:
+                {{ user.login }},
+                password (hashed):
+                {{ user.encPwd }},
+                name:
+                {{ user.name }},
+                surname:
+                {{ user.surname }},
+                birthDate:
+                {% if user.birthDate == null %}
+                    unknown,
+                {% else %}
+                    {{ user.birthDate }},
+
+                {% endif %}
+                status:
+                {% if user.isAdmin == 1 %}
+                    admin
+                {% else %}
+                    user
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+{% endblock %}

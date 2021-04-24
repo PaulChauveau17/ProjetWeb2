@@ -42,12 +42,19 @@ class Users
     /**
      * @ORM\Column(name="anniversaire", type="date", nullable=true)
      */
-    private $birthDate;
+    private $birthdate;
 
     /**
      * @ORM\Column(name="estadmin", type="boolean", options={"default"=false, "comment"="true if the user is an admin"})
      */
     private $isAdmin;
+
+    // Where should I put this ? maybe the prefix should be somewhere else..
+    public static function saltAndHash(string $pwd) : string
+    {
+        $salt = 'SaltyPrefix@$1';
+        return sha1($salt.$pwd);
+    }
 
     public function getId(): ?int
     {
@@ -74,8 +81,8 @@ class Users
     // this setter uses a method to transform an not hashed password into an hashed password
     public function setEncPwd(string $pwd): self
     {
-        //$this->encPwd = saltAndHash($pwd); // to check !
-        $this->encPwd = $pwd;
+        $this->encPwd = Users::saltAndHash($pwd);
+        // $this->encPwd = $pwd;
 
         return $this;
     }
@@ -104,14 +111,14 @@ class Users
         return $this;
     }
 
-    public function getBirthDate(): ?DateTimeInterface
+    public function getBirthdate(): ?DateTimeInterface
     {
-        return $this->birthDate;
+        return $this->birthdate;
     }
 
-    public function setBirthDate(?DateTimeInterface $BirthDate): self
+    public function setBirthdate(?DateTimeInterface $birthdate): self
     {
-        $this->birthDate = $BirthDate;
+        $this->birthdate = $birthdate;
 
         return $this;
     }
