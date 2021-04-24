@@ -12,25 +12,27 @@ class ChooseUserType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        dump($options);
+        $actions = array("edit" => "edit", "remove" => "remove");
         $users = $options['data'];
-        $choices=[];
-
-        foreach($users as $user) {$choices[$user->getId()] = $user->getLogin();}
+        foreach($users as $user) {$userChoices[$user->getLogin()] = $user;}
 
         $builder
-            ->add("Login", ChoiceType::class, [
-            'expanded' => false,
+            ->add("user", ChoiceType::class, [
+                'required'=> true,
+                'expanded' => false,
+                'multiple' => false,
+                'choices' => $userChoices])
+            ->add("action", ChoiceType::class, [
             'required'=> true,
+            'expanded' => true,
             'multiple' => false,
-            'choices' => $choices,
-        ]);
+            'choices' => $actions]);
     }
 
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([
-            'data_class' => Users::class,
+            // 'data_class' => Users::class,
         ]);
     }
 }

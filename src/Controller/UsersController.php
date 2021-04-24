@@ -104,19 +104,18 @@ class UsersController extends AbstractController
      */
     public function addWithFormAction(Request $request): Response
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $userToAdd = new Users();
-        $form = $this->createForm(AddUserType::class, $userToAdd);
+        $form = $this->createForm(AddUserType::class);
         $form->add('send', SubmitType::class, ['label' => 'Add']);
         // We create the form, add a submit button.
         // dump($request);
-        $form->handleRequest($request);
-        dump($form);
+        $userToAdd = $form->handleRequest($request)->getData();
+        // dump($form);
+        dump($userToAdd);
 
         // if we already have a posted form, we treat this one.
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
                 $em->persist($userToAdd);
                 $em->flush();
                 $this->addFlash('info', 'An user as been added');
@@ -126,7 +125,7 @@ class UsersController extends AbstractController
         }
         else {
             $myform = $form->createView();
-            return $this->render('users/users_add.html.twig', [
+            return $this->render('users/users_form.html.twig', [
                 'controller_name' => 'usersController',
                 'myform' => $myform
             ]);
@@ -142,39 +141,57 @@ class UsersController extends AbstractController
 
         $userRepository = $em->getRepository('App\Entity\Users');
         $users = $userRepository->findAll();
-
-        $userToEditId= 0 ; // default value
-        $form = $this->createForm(ChooseUserType::class, $userToEditId, $users);
-        $form->add('send', SubmitType::class, ['label' => 'Add']);
+        // si il y a au moins un user
+        // dump($users);
+        $form = $this->createForm(ChooseUserType::class, $users);
+        $form->add('send', SubmitType::class, ['label' => 'Choose']);
         // We create the form, add a submit button.
-        // dump($request);
-        $form->handleRequest($request);
-        //dump($form);
+
+        $data = $form->handleRequest($request)->getData();
 
         // if we already have a posted form, we treat this one.
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
+                $userSelected = $data["user"];
+                $actionChosen = $data["action"];
+                $this->addFlash('info', 'An user has been chosen');
+                dump($actionChosen);
+                dump($userSelected);
+                /*TODO: faire en sorte de faire la strat de gilles pour attendre avant d'être redirigé et voir les dump.*/
+                switch ($actionChosen){
 
-                /* On modifie l'ustilisateur choisi*/
-                $this->addFlash('info', 'An user as been chosen');
+                    case "edit": return $this->redirectToRoute("users_edit_form");
+
+                    case "remove": return $this->redirectToRoute("users_remove");
+
+                    default: throw $this->createNotFoundException('Invalid action.');
+                }
             }
-            else {$this->addFlash('info', 'User hasn\'t been chosen');}
-            return $this->redirectToRoute("users_index");
+            else {
+                $this->addFlash('info', 'User hasn\'t been chosen');
+                throw $this->createNotFoundException('Invalid form.');
+            }
         }
-        else {
-            $myform = $form->createView();
-            return $this->render('users/users_add.html.twig', [
-                'controller_name' => 'usersController',
-                'myform' => $myform
-            ]);
-        }
+        $myform = $form->createView();
+        return $this->render('users/users_form.html.twig', [
+            'controller_name' => 'usersController',
+            'myform' => $myform
+        ]);
     }
 
+    /**
+     * @Route(name="users_remove")
+     */
+    public function removeAction(Request $request, Users $user): Response
+    {
+        $this->addFlash('info', 'In removeAction');
+        return $this->redirectToRoute("users_index");
+    }
 
     /**
-     * @Route("/edit/form", name="users_edit_form")
+     * @Route(name="users_edit_form")
      */
-    public function editWithFormAction(Request $request): Response
+    public function editWithFormAction(Request $request, Users $user): Response
     {
         /*$em = $this->getDoctrine()->getManager();*/
 
@@ -208,6 +225,8 @@ class UsersController extends AbstractController
                 'myform' => $myform
             ]);
         }*/
+
+        $this->addFlash('info', 'In editWithFormAction');
         return $this->redirectToRoute("users_index");
     }
 

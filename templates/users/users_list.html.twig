@@ -16,12 +16,11 @@
                 surname:
                 {{ user.surname }},
                 birthdate:
-                {% if user.birthdate == null %}
+                {#{% if user.birthdate == null %}
                     unknown,
                 {% else %}
                     {{ user.birthdate }},
-
-                {% endif %}
+                {% endif %}#}
                 status:
                 {% if user.isAdmin == 1 %}
                     admin
