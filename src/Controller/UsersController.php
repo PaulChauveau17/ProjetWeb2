@@ -2,7 +2,8 @@
 
 namespace App\Controller;
 
-//use App\Form\AddUserType;
+use App\Form\AddUserType;
+use App\Form\ChooseUserType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
@@ -101,9 +102,9 @@ class UsersController extends AbstractController
     /**
      * @Route("/add/form", name="users_add_form")
      */
-    public function addBuildFormAction(Request $request): void /*Response*/
+    public function addWithFormAction(Request $request): Response
     {
-        /*$em = $this->getDoctrine()->getManager();
+        $em = $this->getDoctrine()->getManager();
 
         $userToAdd = new Users();
         $form = $this->createForm(AddUserType::class, $userToAdd);
@@ -111,85 +112,103 @@ class UsersController extends AbstractController
         // We create the form, add a submit button.
         // dump($request);
         $form->handleRequest($request);
-
-        // if we have an already posted form, we take this one.
-
         dump($form);
-        if ($form->isSubmitted() && $form->isValid()) {
 
-            $em->persist($userToAdd);
-            $em->flush();
-            $this->addFlash('info', 'An user as been added');
-            return $this->redirectToRoute("users_add_form");
-            // if the form has been submitted and it's valid, we add the entity to database and redirect to the same page (for adding other users)
-        } else {
-            if ($form->isSubmitted() && !($form->isValid())) {
-                $this->addFlash('info', 'User hasn\'t been added');
+        // if we already have a posted form, we treat this one.
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+                $em->persist($userToAdd);
+                $em->flush();
+                $this->addFlash('info', 'An user as been added');
             }
-
+            else {$this->addFlash('info', 'User hasn\'t been added');}
+            return $this->redirectToRoute("users_index");
+        }
+        else {
             $myform = $form->createView();
-            return $this->render('users/add_user.html.twig', [
+            return $this->render('users/users_add.html.twig', [
                 'controller_name' => 'usersController',
-                'action_intern_name' => 'users_add',
                 'myform' => $myform
             ]);
-        }*/
+        }
     }
 
     /**
-     * @Route("/edit/me", name="users_edit_me")
+     * @Route("/choose/form", name="users_choose_form")
      */
-    public function editMeAction(Request $request): void/*Response*/
+    public function chooseWithFormAction(Request $request): Response
     {
-        /*$doc = $this->getDoctrine();
+        $em = $this->getDoctrine()->getManager();
 
-        $loggedUser = new UserLog(
-            $this->getParameter('param_login'),
-            $this->getParameter('param_password'),
-            $doc);
+        $userRepository = $em->getRepository('App\Entity\Users');
+        $users = $userRepository->findAll();
 
-        if ($loggedUser->isUserLogged()) {
-            if (!$loggedUser->isUserAdmin()) { // You access the page only if you are user.
-                $em = $this->getDoctrine()->getManager();
+        $userToEditId= 0 ; // default value
+        $form = $this->createForm(ChooseUserType::class, $userToEditId, $users);
+        $form->add('send', SubmitType::class, ['label' => 'Add']);
+        // We create the form, add a submit button.
+        // dump($request);
+        $form->handleRequest($request);
+        //dump($form);
 
-                $usersRepository = $em->getRepository('App:Users');
-                $myId = $loggedUser->getUser()->getId();
-                $userToEdit = $usersRepository->find($myId); // un persist est fait lorsque l'on fait un find($myId) ou findAll()
+        // if we already have a posted form, we treat this one.
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
 
-                $form = $this->createForm(AddUserType::class, $userToEdit);
-                $form->add('send', SubmitType::class, ['label' => 'Edit']);
+                /* On modifie l'ustilisateur choisi*/
+                $this->addFlash('info', 'An user as been chosen');
+            }
+            else {$this->addFlash('info', 'User hasn\'t been chosen');}
+            return $this->redirectToRoute("users_index");
+        }
+        else {
+            $myform = $form->createView();
+            return $this->render('users/users_add.html.twig', [
+                'controller_name' => 'usersController',
+                'myform' => $myform
+            ]);
+        }
+    }
+
+
+    /**
+     * @Route("/edit/form", name="users_edit_form")
+     */
+    public function editWithFormAction(Request $request): Response
+    {
+        /*$em = $this->getDoctrine()->getManager();*/
+
+        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+
+
+
+        /*
+        // if we already have a posted form, we treat this one.
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+                $userToEdit =
+                $form = $this->createForm(AddUserType::class, $userToAdd);
+                $form->add('send', SubmitType::class, ['label' => 'Add']);
                 // We create the form, add a submit button.
                 // dump($request);
                 $form->handleRequest($request);
+                //dump($form);
 
-                // if we have an already posted form, we take this one.
-
-                dump($form);
-                if ($form->isSubmitted() && $form->isValid()) {
-                    // $em->persist($userToEdit); // pas besoin
-                    $em->flush();
-                    $this->addFlash('info', 'User has been edited');
-                    return $this->redirectToRoute("users_edit_me");
-                    // if the form has been submitted and it's valid, we add the entity to database and redirect to the same page (for adding other users)
-                } else {
-                    if ($form->isSubmitted() && !($form->isValid())) {
-                        $this->addFlash('info', 'User hasn\'t been edited');
-                    }
-                    $myform = $form->createView();
-                    return $this->render('users/add_user.html.twig', [
-                        'controller_name' => 'usersController',
-                        'action_intern_name' => 'users_edit',
-                        'myform' => $myform
-                    ]);
-                }
-            } else {
-                throw $this->createNotFoundException('Permission denied: You have to be an user.');
+                $em->persist($userToAdd);
+                $em->flush();
+                $this->addFlash('info', 'An user as been added');
             }
+            else {$this->addFlash('info', 'User hasn\'t been added');}
+            return $this->redirectToRoute("users_index");
         }
         else {
-            throw $this->createNotFoundException('Permission denied: You have to be logged.');
-            //If the user do not respect the conditions to access the page...
+            $myform = $form->createView();
+            return $this->render('users/users_add.html.twig', [
+                'controller_name' => 'usersController',
+                'myform' => $myform
+            ]);
         }*/
+        return $this->redirectToRoute("users_index");
     }
 
 }
