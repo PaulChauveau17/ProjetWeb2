@@ -1,0 +1,22 @@
+{% extends 'models/custom.html.twig' %}
+
+{% block view_title %}Display of items{% endblock %}
+
+{% block view_content %}
+    <p>
+        <ul>
+        {% for item in items %}
+            <li>
+                description:
+                {{ item.description }},
+                price:
+                {{ item.price }},
+                {% if item.stock == 0 %}
+                    not in stock /!\
+                {% else %}
+                    number in stock : {{ item.stock }}
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+{% endblock %}

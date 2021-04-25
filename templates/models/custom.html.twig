@@ -7,7 +7,7 @@
 
     {# Est-ce nécessaire de pouvoir overrides le menu ? -> oui, pour l'inclusion de controller. #}
     <h1>{% block menu_title %}Incredible menu title{% endblock %}</h1>
-    {% block menu_content %} #}{# TODO: inclusion de controller #}{# {% endblock %}
+    {% block menu_content %} {# TODO: inclusion de controller #} {% endblock %}
     
 
     {# On ne créé pas de bloc ici car on affichera toujours les messages flash dans les vues filles. #}
@@ -42,4 +42,3 @@
     </div>
 
 {% endblock %} {# fin de la redéfinition du bloc body de base.html.twig #}
-
