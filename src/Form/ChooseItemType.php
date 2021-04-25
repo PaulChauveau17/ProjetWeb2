@@ -2,26 +2,26 @@
 
 namespace App\Form;
 
-use App\Entity\Users;
+use App\Entity\Items;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class ChooseUserType extends AbstractType
+class ChooseItemType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $actions = array("edit" => "edit", "remove" => "remove", "show" => "show");
-        $users = $options['data'];
-        foreach($users as $user) {$userChoices[$user->getLogin()] = $user;}
+        $items = $options['data'];
+        foreach($items as $item) {$itemChoices[$item->getDescription()] = $item;}
 
         $builder
-            ->add("user", ChoiceType::class, [
+            ->add("item", ChoiceType::class, [
                 'required'=> true,
                 'expanded' => false,
                 'multiple' => false,
-                'choices' => $userChoices])
+                'choices' => $itemChoices])
             ->add("action", ChoiceType::class, [
             'required'=> true,
             'expanded' => true,
@@ -32,7 +32,7 @@ class ChooseUserType extends AbstractType
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([
-            // 'data_class' => Users::class,
+            // 'data_class' => items::class,
         ]);
     }
 }

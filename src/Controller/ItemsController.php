@@ -2,150 +2,137 @@
 
 namespace App\Controller;
 
-use App\Form\AddUserType;
-use App\Form\ChooseUserType;
+use App\Form\ChooseItemType;
+use App\Form\AddItemType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-use App\Entity\Users;
+use App\Entity\Items;
 
 /**
  * @package App\Controller
  *
- * @Route("/users")
+ * @Route("/items")
  **/
-class UsersController extends AbstractController
+class ItemsController extends AbstractController
 {
 
     /**
-     * @Route("/", name="users_index")
+     * @Route("/", name="items_index")
      */
     public function indexAction(): Response
     {
-        return $this->render('users/users_index.html.twig', [
-            'controller_name' => 'UsersController',
+        return $this->render('items/items_index.html.twig', [
+            'controller_name' => 'ItemsController',
         ]);
     }
 
     /**
-     * @Route("/list", name="users_list")
+     * @Route("/list", name="items_list")
      */
     public function listAction(): Response
     {
-        // TODO: restrict access to this action to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
 
         $em = $this->getDoctrine()->getManager();
-        $userRepository = $em->getRepository('App\Entity\Users');
-        $users = $userRepository->findAll();
+        $itemsRepository = $em->getRepository('App\Entity\Items');
+        $items = $itemsRepository->findAll();
 
-        //dump($users);
+        //dump($items);
 
-        return $this->render('users/users_list.html.twig', [
-            'controller_name' => 'UsersController',
-            'users' => $users,
+        return $this->render('items/items_list.html.twig', [
+            'controller_name' => 'ItemsController',
+            'items' => $items,
         ]);
     }
 
     /**
-     * @Route("/add/toto", name="users_add_toto")
+     * @Route("/add/COVID", name="items_add_COVID")
      */
-    public function addTotoAction(): Response
+    public function addCOVIDAction(): Response
     {
-        /* raise an exception if toto is already created */
-        $user = new Users(); // l'utilisateur est encore indépendant de Doctrine
-        $user->setLogin('toto')
-            ->setEncPwd("otot")
-            ->setName("Twopak")
-            ->setSurname("Tom")
-            ->setBirthDate(null)
-            ->setIsAdmin(false);// valeur par défaut mais on force
-        //dump($user);
+        /* increase stock if already created */
+        $item = new Items(); // l'item est encore indépendant de Doctrine
+        $item->setDescription('Coronavirus disease 2019 (COVID-19)')
+            ->setPrice(1.99)
+            ->setStock(9000000000);
         $em = $this->getDoctrine()->getManager();
 
-        $em->persist($user); // Doctrine devient responsable de l'user
+        $em->persist($item); // Doctrine devient responsable de l'item
         $em->flush(); // injection physique dans la BD
-
-        //dump($user);
+        $this->addFlash('info', "COVID has been added");
 
         // on redirige vers une autre action
-        return $this->redirectToRoute('users_list');
+        return $this->redirectToRoute('items_list');
     }
 
     /**
-     * @Route("/add/admin", name="users_add_admin")
+     * @Route("/add/project", name="items_add_project")
      */
-    public function addAdminAction(): Response
+    public function addProjectAction(): Response
     {
-        /* raise an exception if admin is already created */
-        $admin = new Users(); // l'utilisateur est encore indépendant de Doctrine
-        $admin->setLogin('admin')
-            ->setEncPwd("nimda")
-            ->setName("Pujadas")
-            ->setSurname("David")
-            ->setBirthDate(null)
-            ->setIsAdmin(true);
-        //dump($admin);
-
+        /* increase stock if already created */
+        $item = new Items(); // l'item est encore indépendant de Doctrine
+        $item->setDescription('A website which manage users, items and carts')
+            ->setPrice(4.99)
+            ->setStock(1);
         $em = $this->getDoctrine()->getManager();
 
-        $em->persist($admin); // Doctrine devient responsable de l'user
-
+        $em->persist($item); // Doctrine devient responsable de l'item
         $em->flush(); // injection physique dans la BD
+        $this->addFlash('info', "This project has been added");
 
         // on redirige vers une autre action
-        return $this->redirectToRoute('users_list');
+        return $this->redirectToRoute('items_list');
     }
 
     /**
-     * @Route("/add/form", name="users_add_form")
+     * @Route("/add/form", name="items_add_form")
      */
     public function addWithFormAction(Request $request): Response
     {
-        $form = $this->createForm(AddUserType::class);
+        $form = $this->createForm(AddItemType::class);
         $form->add('send', SubmitType::class, ['label' => 'Add']);
         // We create the form, add a submit button.
         // dump($request);
-        $userToAdd = $form->handleRequest($request)->getData();
+        $itemToAdd = $form->handleRequest($request)->getData();
         // dump($form);
-        dump($userToAdd);
+        dump($itemToAdd);
 
         // if we already have a posted form, we treat this one.
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
                 $em = $this->getDoctrine()->getManager();
-                $userLogin = $userToAdd->getLogin();
-                $em->persist($userToAdd);
+                $itemDescription = $itemToAdd->getDescription();
+                $em->persist($itemToAdd);
                 $em->flush();
-                $this->addFlash('info', "$userLogin as been added");
+                $this->addFlash('info', "$itemDescription as been added");
             }
-            else {$this->addFlash('info', 'User hasn\'t been added');}
-            return $this->redirectToRoute("users_index");
+            else {$this->addFlash('info', 'Item hasn\'t been added');}
+            return $this->redirectToRoute("items_index");
         }
         else {
             $myform = $form->createView();
-            return $this->render('users/users_form.html.twig', [
-                'controller_name' => 'usersController',
+            return $this->render('items/items_form.html.twig', [
+                'controller_name' => 'itemsController',
                 'myform' => $myform
             ]);
         }
     }
 
     /**
-     * @Route("/choose", name="users_choose")
+     * @Route("/choose", name="items_choose")
      */
     public function chooseAction(Request $request): Response
     {
         $em = $this->getDoctrine()->getManager();
 
-        $userRepository = $em->getRepository('App\Entity\Users');
-        $users = $userRepository->findAll();
-        // si il y a au moins un user
-        // dump($users);
-        $form = $this->createForm(ChooseUserType::class, $users);
+        $itemsRepository = $em->getRepository('App\Entity\Items');
+        $items = $itemsRepository->findAll();
+        // si il y a au moins un item
+        $form = $this->createForm(ChooseItemType::class, $items);
         $form->add('send', SubmitType::class, ['label' => 'Choose']);
         // We create the form, add a submit button.
 
@@ -155,69 +142,70 @@ class UsersController extends AbstractController
         // if we already have a posted form, we treat this one.
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
-                $userID = $data["user"]->getID();
-                $userLogin =  $data["user"]->getLogin();
+                $itemID = $data["item"]->getID();
+                $itemDescription =  $data["item"]->getDescription();
                 $actionChosen = $data["action"];
-                $this->addFlash('info', "$userLogin has been chosen");
+                $this->addFlash('info', "$itemDescription has been chosen");
 
                 switch ($actionChosen){
-                    case "edit": return $this->redirectToRoute("users_edit", ["id" => $userID]);
-                    case "remove": return $this->redirectToRoute("users_remove", ["id" => $userID]);
-                    case "show": return $this->render('users/users_list.html.twig', [
-                        'controller_name' => 'UsersController',
-                        'users' => array($data["user"])
+                    case "edit": return $this->redirectToRoute("items_edit", ["id" => $itemID]);
+                    case "remove": return $this->redirectToRoute("items_remove", ["id" => $itemID]);
+                    case "show": return $this->render('items/items_list.html.twig', [
+                        'controller_name' => 'ItemsController',
+                        'items' => array($data["item"])
                     ]); /* pas super propre.. */
-                    default: throw $this->createNotFoundException("$actionChosen/$userLogin");
+                    default: throw $this->createNotFoundException("$actionChosen/$itemDescription");
                 }
             }
             else {
-                $this->addFlash('info', 'User hasn\'t been chosen');
+                $this->addFlash('info', 'Item hasn\'t been chosen');
                 throw $this->createNotFoundException('Invalid form.');
             }
         }
         $myform = $form->createView();
-        return $this->render('users/users_form.html.twig', [
-            'controller_name' => 'usersController',
+        return $this->render('items/items_form.html.twig', [
+            'controller_name' => 'itemsController',
             'myform' => $myform
         ]);
     }
 
     /**
-     * @Route("/remove/{id?}", name="users_remove", requirements = {"id" = "[1-9]\d*"})
+     * @Route("/remove/{id?}", name="items_remove", requirements = {"id" = "[1-9]\d*"})
      */
     public function removeAction($id): Response
     {
         /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
 
         // Default is null for id
-        if ($id == null) {throw $this->createNotFoundException('Please choose a user id.');}
+        if ($id == null) {throw $this->createNotFoundException('Please choose a item id.');}
         else{
             $em = $this->getDoctrine()->getManager();
-            $userRepository = $em->getRepository('App\Entity\Users');
-            $userToRemove =  $userRepository->find($id);
-            $em->remove($userToRemove);
+            $itemsRepository = $em->getRepository('App\Entity\Items');
+            $itemToRemove =  $itemsRepository->find($id);
+            /* si l'item a été trouvé */
+            $em->remove($itemToRemove);
             $em->flush();
-            /*throw $this->createNotFoundException("nothing to do with user $id");*/
-            $this->addFlash('info', "User $id has been removed.");
+            /*throw $this->createNotFoundException("nothing to do with item $id");*/
+            $this->addFlash('info', "Item $id has been removed.");
         }
-        return $this->redirectToRoute("users_index");
+        return $this->redirectToRoute("items_index");
     }
 
     /**
-     * @Route("/edit/{id?}", name="users_edit", requirements = {"id" = "[1-9]\d*"})
+     * @Route("/edit/{id?}", name="items_edit", requirements = {"id" = "[1-9]\d*"})
      */
     public function editAction($id, Request $request): Response
     {
         /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
 
         // Default is null for id
-        if ($id == null) {throw $this->createNotFoundException('Please choose a user id.');}
+        if ($id == null) {throw $this->createNotFoundException('Please choose a item id.');}
         else{
             $em = $this->getDoctrine()->getManager();
-            $userRepository = $em->getRepository('App\Entity\Users');
-            $userToEdit =  $userRepository->find($id);
+            $itemsRepository = $em->getRepository('App\Entity\Items');
+            $itemToEdit =  $itemsRepository->find($id);
 
-            $form = $this->createForm(AddUserType::class, $userToEdit);
+            $form = $this->createForm(AddItemType::class, $itemToEdit);
             $form->add('send', SubmitType::class, ['label' => 'Edit']);
             // We create the form, add a submit button.
             // dump($request);
@@ -226,18 +214,18 @@ class UsersController extends AbstractController
             // if we already have a posted form, we treat this one.
             if ($form->isSubmitted()) {
                 if ($form->isValid()) {
-                    // edit the guy
-                    $em->persist($userToEdit);
+                    // edit the item
+                    $em->persist($itemToEdit);
                     $em->flush();
-                    $this->addFlash('info', "User $id has been edited");
+                    $this->addFlash('info', "Item $id has been edited");
                 }
-                else {$this->addFlash('info', 'User hasn\'t been edited');}
-                return $this->redirectToRoute("users_list");
+                else {$this->addFlash('info', 'Item hasn\'t been edited');}
+                return $this->redirectToRoute("items_list");
             }
             else {
                 $myform = $form->createView();
-                return $this->render('users/users_form.html.twig', [
-                    'controller_name' => 'usersController',
+                return $this->render('items/items_form.html.twig', [
+                    'controller_name' => 'itemsController',
                     'myform' => $myform
                 ]);
             }

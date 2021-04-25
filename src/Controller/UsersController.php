@@ -39,8 +39,8 @@ class UsersController extends AbstractController
         /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
 
         $em = $this->getDoctrine()->getManager();
-        $userRepository = $em->getRepository('App\Entity\Users');
-        $users = $userRepository->findAll();
+        $usersRepository = $em->getRepository('App\Entity\Users');
+        $users = $usersRepository->findAll();
 
         //dump($users);
 
@@ -68,6 +68,7 @@ class UsersController extends AbstractController
 
         $em->persist($user); // Doctrine devient responsable de l'user
         $em->flush(); // injection physique dans la BD
+        $this->addFlash('info', "toto has been added");
 
         //dump($user);
 
@@ -93,8 +94,8 @@ class UsersController extends AbstractController
         $em = $this->getDoctrine()->getManager();
 
         $em->persist($admin); // Doctrine devient responsable de l'user
-
         $em->flush(); // injection physique dans la BD
+        $this->addFlash('info', "admin has been added");
 
         // on redirige vers une autre action
         return $this->redirectToRoute('users_list');
@@ -117,9 +118,10 @@ class UsersController extends AbstractController
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
                 $em = $this->getDoctrine()->getManager();
+                $userLogin = $userToAdd->getLogin();
                 $em->persist($userToAdd);
                 $em->flush();
-                $this->addFlash('info', 'An user as been added');
+                $this->addFlash('info', "$userLogin as been added");
             }
             else {$this->addFlash('info', 'User hasn\'t been added');}
             return $this->redirectToRoute("users_index");
@@ -140,8 +142,8 @@ class UsersController extends AbstractController
     {
         $em = $this->getDoctrine()->getManager();
 
-        $userRepository = $em->getRepository('App\Entity\Users');
-        $users = $userRepository->findAll();
+        $usersRepository = $em->getRepository('App\Entity\Users');
+        $users = $usersRepository->findAll();
         // si il y a au moins un user
         // dump($users);
         $form = $this->createForm(ChooseUserType::class, $users);
@@ -165,7 +167,7 @@ class UsersController extends AbstractController
                     case "show": return $this->render('users/users_list.html.twig', [
                         'controller_name' => 'UsersController',
                         'users' => array($data["user"])
-                    ]);
+                    ]); /* pas super propre.. */
                     default: throw $this->createNotFoundException("$actionChosen/$userLogin");
                 }
             }
@@ -192,8 +194,8 @@ class UsersController extends AbstractController
         if ($id == null) {throw $this->createNotFoundException('Please choose a user id.');}
         else{
             $em = $this->getDoctrine()->getManager();
-            $userRepository = $em->getRepository('App\Entity\Users');
-            $userToRemove =  $userRepository->find($id);
+            $usersRepository = $em->getRepository('App\Entity\Users');
+            $userToRemove =  $usersRepository->find($id);
             $em->remove($userToRemove);
             $em->flush();
             /*throw $this->createNotFoundException("nothing to do with user $id");*/
@@ -213,8 +215,8 @@ class UsersController extends AbstractController
         if ($id == null) {throw $this->createNotFoundException('Please choose a user id.');}
         else{
             $em = $this->getDoctrine()->getManager();
-            $userRepository = $em->getRepository('App\Entity\Users');
-            $userToEdit =  $userRepository->find($id);
+            $usersRepository = $em->getRepository('App\Entity\Users');
+            $userToEdit =  $usersRepository->find($id);
 
             $form = $this->createForm(AddUserType::class, $userToEdit);
             $form->add('send', SubmitType::class, ['label' => 'Edit']);

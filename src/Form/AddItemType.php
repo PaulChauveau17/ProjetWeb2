@@ -2,40 +2,31 @@
 
 namespace App\Form;
 
-use App\Entity\Users;
+use App\Entity\Items;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
-use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class AddUserType extends AbstractType
+class AddItemType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('login', TextType::class,
-                ['label' => 'login'])
-            ->add('EncPwd', PasswordType::class,
-                ['label' => 'password'])
-            ->add('name', TextType::class,
-                ['label' => 'name'])
-            ->add('surname', TextType::class,
-                ['label' => 'surname'])
-            ->add('BirthDate', DateTimeType::class,
-                ['label' => 'birthdate'])
-            ->add("isAdmin", HiddenType::class,
-                ['empty_data' => false])
-        ;
-        dump($options);
+            ->add('description', TextType::class,
+                ['label' => 'description'])
+            ->add('price', MoneyType::class,
+                ['label' => 'price',])
+            ->add('stock', IntegerType::class,
+                ['label' => 'quantity']);
     }
 
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([
-            'data_class' => Users::class,
+            'data_class' => Items::class,
         ]);
     }
 }
