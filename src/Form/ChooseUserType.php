@@ -12,7 +12,7 @@ class ChooseUserType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $actions = array("edit" => "edit", "remove" => "remove");
+        $actions = array("edit" => "edit", "remove" => "remove", "show" => "show");
         $users = $options['data'];
         foreach($users as $user) {$userChoices[$user->getLogin()] = $user;}
 
