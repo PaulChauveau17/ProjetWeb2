@@ -58,9 +58,9 @@ class UsersController extends AbstractController
         /* raise an exception if toto is already created */
         $user = new Users(); // l'utilisateur est encore indépendant de Doctrine
         $user->setLogin('toto')
-            ->setEncPwd("otot")
-            ->setName("Twopak")
-            ->setSurname("Tom")
+            ->setEncPwd('otot')
+            ->setName('Twopak')
+            ->setSurname('Tom')
             ->setBirthDate(null)
             ->setIsAdmin(false);// valeur par défaut mais on force
         //dump($user);
@@ -84,9 +84,9 @@ class UsersController extends AbstractController
         /* raise an exception if admin is already created */
         $admin = new Users(); // l'utilisateur est encore indépendant de Doctrine
         $admin->setLogin('admin')
-            ->setEncPwd("nimda")
-            ->setName("Pujadas")
-            ->setSurname("David")
+            ->setEncPwd('nimda')
+            ->setName('Pujadas')
+            ->setSurname('David')
             ->setBirthDate(null)
             ->setIsAdmin(true);
         //dump($admin);
@@ -164,11 +164,7 @@ class UsersController extends AbstractController
                 switch ($actionChosen){
                     case "edit": return $this->redirectToRoute("users_edit", ["id" => $userID]);
                     case "remove": return $this->redirectToRoute("users_remove", ["id" => $userID]);
-                    case "show": return $this->render('users/users_list.html.twig', [
-                        'controller_name' => 'UsersController',
-                        'users' => array($data["user"])
-                    ]); /* pas super propre.. */
-                    default: throw $this->createNotFoundException("$actionChosen/$userLogin");
+                    default: throw $this->createNotFoundException("$actionChosen/$userID");
                 }
             }
             else {

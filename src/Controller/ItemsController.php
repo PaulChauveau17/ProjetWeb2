@@ -150,11 +150,7 @@ class ItemsController extends AbstractController
                 switch ($actionChosen){
                     case "edit": return $this->redirectToRoute("items_edit", ["id" => $itemID]);
                     case "remove": return $this->redirectToRoute("items_remove", ["id" => $itemID]);
-                    case "show": return $this->render('items/items_list.html.twig', [
-                        'controller_name' => 'ItemsController',
-                        'items' => array($data["item"])
-                    ]); /* pas super propre.. */
-                    default: throw $this->createNotFoundException("$actionChosen/$itemDescription");
+                    default: throw $this->createNotFoundException("$actionChosen/$itemID");
                 }
             }
             else {
@@ -181,7 +177,7 @@ class ItemsController extends AbstractController
         else{
             $em = $this->getDoctrine()->getManager();
             $itemsRepository = $em->getRepository('App\Entity\Items');
-            $itemToRemove =  $itemsRepository->find($id);
+            $itemToRemove = $itemsRepository->find($id);
             /* si l'item a été trouvé */
             $em->remove($itemToRemove);
             $em->flush();
@@ -203,7 +199,7 @@ class ItemsController extends AbstractController
         else{
             $em = $this->getDoctrine()->getManager();
             $itemsRepository = $em->getRepository('App\Entity\Items');
-            $itemToEdit =  $itemsRepository->find($id);
+            $itemToEdit = $itemsRepository->find($id);
 
             $form = $this->createForm(AddItemType::class, $itemToEdit);
             $form->add('send', SubmitType::class, ['label' => 'Edit']);

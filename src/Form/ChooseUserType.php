@@ -2,7 +2,6 @@
 
 namespace App\Form;
 
-use App\Entity\Users;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -12,7 +11,7 @@ class ChooseUserType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $actions = array("edit" => "edit", "remove" => "remove", "show" => "show");
+        $actions = array("edit" => "edit", "remove" => "remove");
         $users = $options['data'];
         foreach($users as $user) {$userChoices[$user->getLogin()] = $user;}
 

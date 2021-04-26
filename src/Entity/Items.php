@@ -13,6 +13,11 @@ use App\Repository\ItemsRepository;
  */
 class Items
 {
+    public function __toString()
+    {
+        return strval( $this->getId() );
+    }
+
     /**
      * @ORM\Id
      * @ORM\GeneratedValue

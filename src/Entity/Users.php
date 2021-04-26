@@ -12,6 +12,11 @@ use App\Repository\UsersRepository;
  */
 class Users
 {
+    public function __toString()
+    {
+        return strval( $this->getId() );
+    }
+
     /**
      * @ORM\Id
      * @ORM\GeneratedValue

@@ -27,8 +27,7 @@ class AddUserType extends AbstractType
             ->add('BirthDate', DateTimeType::class,
                 ['label' => 'birthdate'])
             ->add("isAdmin", HiddenType::class,
-                ['empty_data' => false])
-        ;
+                ['empty_data' => false]);
         dump($options);
     }
 

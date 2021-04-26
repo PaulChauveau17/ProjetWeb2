@@ -20,13 +20,16 @@ class Carts
      */
     private $id;
 
+    // Many to One !!
+    // Only the primary key is going to be stocked
     /**
-     * @ORM\OneToOne(targetEntity=Users::class, cascade={"persist", "remove"})
+     * @ORM\ManyToOne(targetEntity=Users::class)
      * @ORM\JoinColumn(referencedColumnName="pk", nullable=false)
      * @ORM\Column(name="utilisateur")
      */
     private $user;
 
+    // Only the primary key is going to be stocked
     /**
      * @ORM\ManyToOne(targetEntity=Items::class)
      * @ORM\JoinColumn(nullable=false)
@@ -46,10 +49,16 @@ class Carts
         return $this->id;
     }
 
-    public function getUser(): ?Users
+    /*public function getUser(): ?Users
+    {
+        return $this->user;
+    }*/
+    // we need to edit getters which return the ID
+    public function getUserID(): int
     {
         return $this->user;
     }
+
 
     public function setUser(Users $user): self
     {
@@ -58,10 +67,16 @@ class Carts
         return $this;
     }
 
-    public function getItem(): ?Items
+    /*public function getItem(): ?Items
+    {
+        return $this->item;
+    }*/
+    // this getter returns the ID
+    public function getItemID(): int
     {
         return $this->item;
     }
+
 
     public function setItem(?Items $item): self
     {
