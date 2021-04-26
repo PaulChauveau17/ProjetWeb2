@@ -48,41 +48,42 @@ class ItemsController extends AbstractController
         ]);
     }
 
+
+
     /**
      * @Route("/add/COVID", name="items_add_COVID")
      */
     public function addCOVIDAction(): Response
     {
-        /* increase stock if already created */
-        $item = new Items(); // l'item est encore indépendant de Doctrine
-        $item->setDescription('Coronavirus disease 2019 (COVID-19)')
-            ->setPrice(1.99)
-            ->setStock(9000000000);
+        $description = 'coronavirus disease 2019 (COVID-19)';
+        $price = 1.99;
         $em = $this->getDoctrine()->getManager();
+        $query = $em->createQuery("SELECT i FROM App\Entity\Items i WHERE i.description = :description and i.price = :price");
+        $query->setParameters(array('description' => $description, 'price' => $price));
+        $matchedItems = $query->getResult();
+
+        if($matchedItems == null){
+            // l'item n'existe pas au même prix
+            $item = new Items(); // l'item est encore indépendant de Doctrine
+            $item->setDescription($description)
+                ->setPrice($price)
+                ->setStock(9000000000);
+            $this->addFlash('info', "COVID-19 has been added");
+        }
+        else {
+            // l'item existe déjà au même prix
+            if (count($matchedItems) != 1) {
+                throw $this->createNotFoundException('There is a problem with items.');
+            } else {
+                $item = $matchedItems[0];
+                $newStock = $item->getStock() + 1;
+                $item->setStock($newStock);
+                $this->addFlash('info', "COVID-19 stock has increased");
+            }
+        }
 
         $em->persist($item); // Doctrine devient responsable de l'item
         $em->flush(); // injection physique dans la BD
-        $this->addFlash('info', "COVID has been added");
-
-        // on redirige vers une autre action
-        return $this->redirectToRoute('items_list');
-    }
-
-    /**
-     * @Route("/add/project", name="items_add_project")
-     */
-    public function addProjectAction(): Response
-    {
-        /* increase stock if already created */
-        $item = new Items(); // l'item est encore indépendant de Doctrine
-        $item->setDescription('A website which manage users, items and carts')
-            ->setPrice(4.99)
-            ->setStock(1);
-        $em = $this->getDoctrine()->getManager();
-
-        $em->persist($item); // Doctrine devient responsable de l'item
-        $em->flush(); // injection physique dans la BD
-        $this->addFlash('info', "This project has been added");
 
         // on redirige vers une autre action
         return $this->redirectToRoute('items_list');
@@ -97,19 +98,40 @@ class ItemsController extends AbstractController
         $form->add('send', SubmitType::class, ['label' => 'Add']);
         // We create the form, add a submit button.
         // dump($request);
-        $itemToAdd = $form->handleRequest($request)->getData();
-        // dump($form);
-        dump($itemToAdd);
 
         // if we already have a posted form, we treat this one.
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
+                $item = $form->handleRequest($request)->getData();
+                // dump($itemToAdd);
+
                 $em = $this->getDoctrine()->getManager();
-                $itemDescription = $itemToAdd->getDescription();
-                $em->persist($itemToAdd);
+                $itemDescription = $item->getDescription();
+                $itemPrice = $item->getPrice();
+
+                $query = $em->createQuery("SELECT i FROM App\Entity\Items i WHERE i.description = :description and i.price = :price");
+                $query->setParameters(array('description' => $itemDescription, 'price' => $itemPrice));
+                $matchedItems = $query->getResult();
+
+                if ($matchedItems != null) {
+                    // l'item n'existe pas au même prix
+                    $em->persist($item);
+                    $this->addFlash('info', "$itemDescription ($$itemPrice) has been added");
+                } else {
+                    // l'item existe déjà au même prix
+                    if (count($matchedItems) != 1) {
+                        throw $this->createNotFoundException('There is a problem with items.');
+                    } else {
+                        $oldItem = $matchedItems[0];
+                        $newStock = $item->getStock() + $oldItem->getStock();
+                        $oldItem->setStock($newStock);
+                        $em->persist($oldItem);
+                        $this->addFlash('info', "$itemDescription ($$itemPrice) was already in base, so stock has increased");
+                    }
+                }
                 $em->flush();
-                $this->addFlash('info', "$itemDescription as been added");
             }
+
             else {$this->addFlash('info', 'Item hasn\'t been added');}
             return $this->redirectToRoute("items_index");
         }
@@ -214,6 +236,7 @@ class ItemsController extends AbstractController
                     $em->persist($itemToEdit);
                     $em->flush();
                     $this->addFlash('info', "Item $id has been edited");
+                    /* we need to check if we don't get a existing item (same description and price)*/
                 }
                 else {$this->addFlash('info', 'Item hasn\'t been edited');}
                 return $this->redirectToRoute("items_list");

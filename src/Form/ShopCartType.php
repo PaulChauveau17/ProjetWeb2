@@ -20,7 +20,10 @@ class ShopCartType extends AbstractType
         foreach($users as $user) {$userChoices[$user->getLogin()] = $user;}
         foreach($items as $item) {
             if ($item->getStock() > 0)
-            $itemChoices[$item->getDescription()] = $item;
+                $str = $item->getDescription();
+                $price = $item->getPrice();
+                $str .= " ($$price)";
+            $itemChoices[$str] = $item;
         }
 
         $builder

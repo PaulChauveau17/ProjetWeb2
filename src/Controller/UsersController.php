@@ -55,7 +55,7 @@ class UsersController extends AbstractController
      */
     public function addTotoAction(): Response
     {
-        /* raise an exception if toto is already created */
+        /* raise an exception if toto is already created -> login is unique */
         $user = new Users(); // l'utilisateur est encore indépendant de Doctrine
         $user->setLogin('toto')
             ->setEncPwd('otot')
@@ -81,7 +81,7 @@ class UsersController extends AbstractController
      */
     public function addAdminAction(): Response
     {
-        /* raise an exception if admin is already created */
+        /* raise an exception if admin is already created -> login is unique */
         $admin = new Users(); // l'utilisateur est encore indépendant de Doctrine
         $admin->setLogin('admin')
             ->setEncPwd('nimda')
