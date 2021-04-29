@@ -20,25 +20,22 @@ class Carts
      */
     private $id;
 
-    // Many to One !!
-    // Only the primary key is going to be stocked
     /**
+     * @var Users
      * @ORM\ManyToOne(targetEntity=Users::class)
-     * @ORM\JoinColumn(referencedColumnName="pk", nullable=false)
-     * @ORM\Column(name="utilisateur")
+     * @ORM\JoinColumn(name="utilisateur", nullable=false, referencedColumnName="pk")
      */
     private $user;
 
-    // Only the primary key is going to be stocked
     /**
+     * @var Items
      * @ORM\ManyToOne(targetEntity=Items::class)
-     * @ORM\JoinColumn(nullable=false)
-     * @ORM\Column(name="produit")
+     * @ORM\JoinColumn(name="produit", nullable=false, referencedColumnName="pk")
      */
     private $item;
 
     /**
-     * @ORM\Column(name="quantite", type="integer", nullable=false, options={"default"=0})
+     * @ORM\Column(name="quantite", type="integer", nullable=false, options={"default"=1})
      * @Assert\GreaterThanOrEqual(0)
      */
     private $quantity;
@@ -49,16 +46,15 @@ class Carts
         return $this->id;
     }
 
-    /*public function getUser(): ?Users
-    {
-        return $this->user;
-    }*/
-    // we need to edit getters which return the ID
-    public function getUserID(): int
+    public function getUser(): ?Users
     {
         return $this->user;
     }
 
+    /*public function getUserID(): int
+    { // this getter returns the ID
+        return $this->user;
+    }*/
 
     public function setUser(Users $user): self
     {
@@ -67,16 +63,15 @@ class Carts
         return $this;
     }
 
-    /*public function getItem(): ?Items
-    {
-        return $this->item;
-    }*/
-    // this getter returns the ID
-    public function getItemID(): int
+    public function getItem(): ?Items
     {
         return $this->item;
     }
 
+    /*public function getItemID(): int
+    {  // this getter returns the ID
+        return $this->item;
+    }*/
 
     public function setItem(?Items $item): self
     {

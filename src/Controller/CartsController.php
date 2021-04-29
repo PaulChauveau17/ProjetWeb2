@@ -96,16 +96,20 @@ class CartsController extends AbstractController
                     $cart->setQuantity($quantity);
                 }
                 else{
-                    // l'user a déjà l'item dans son panier, alors il n'y a qu'un seul panier à priori
+                    // l'user a déjà l'item dans son panier, alors il n'y a qu'un seul panier qui le contient à priori
                     if (count($matchedCarts) != 1) {throw $this->createNotFoundException('There is a problem with carts.');}
                     else{
                         $cart = $matchedCarts[0];
                         $newQuantity = $cart->getQuantity() + $quantity;
                         $cart->setQuantity($newQuantity);
                     }
-
                 }
+                $newStock = $item->getStock() - $quantity;
+                $item->setStock($newStock);
+
+                $em->persist($item);
                 $em->persist($cart);
+
                 // without toString() function in Users and Items
                 // $em->flush(); // Object of class App\Entity\Users could not be converted to string
 
@@ -192,11 +196,21 @@ class CartsController extends AbstractController
             $em = $this->getDoctrine()->getManager();
             $cartsRepository = $em->getRepository('App\Entity\Carts');
             $cartToRemove = $cartsRepository->find($id);
-            /* si l'item a été trouvé */
-            $em->remove($cartToRemove);
-            $em->flush();
-            /*throw $this->createNotFoundException("nothing to do with item $id");*/
-            $this->addFlash('info', "Cart $id has been removed.");
+            if ($cartToRemove != null) {
+                $itemID = $cartToRemove->getItemID();
+                $itemsRepository = $em->getRepository('App\Entity\Items');
+                $item = $itemsRepository->find($itemID); // i don't check if this is not null
+
+                $newStock = $item->getStock() + $cartToRemove->getQuantity();
+                $item->setStock($newStock);
+                $em->persist($item);
+
+                $em->remove($cartToRemove);
+                $em->flush();
+                $this->addFlash('info', "Cart $id has been removed.");
+                $this->addFlash('info', "Item $itemID : stock has raised.");
+            }
+            else {throw $this->createNotFoundException('This id is not in the base.');}
         }
         return $this->redirectToRoute("carts_index");
     }
@@ -206,8 +220,11 @@ class CartsController extends AbstractController
      */
     public function editAction($id, Request $request): Response
     {
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        //throw $this->createNotFoundException('Permission denied: You have to be logged.');
 
+        // le top serait d'appeler la fonction d'ajout puis de suppression
+
+        /* Pas opti et pas fini
         // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a cart id.');}
         else{
@@ -215,6 +232,8 @@ class CartsController extends AbstractController
 
             $cartsRepository = $em->getRepository('App\Entity\Carts');
             $cartToEdit = $cartsRepository->find($id);
+
+            if ($cartToEdit == null) {throw $this->createNotFoundException('This id is not in the base.');}
 
             $usersRepository = $em->getRepository('App\Entity\Users');
             $users = $usersRepository->findAll();
@@ -233,11 +252,33 @@ class CartsController extends AbstractController
             if ($form->isSubmitted()) {
                 if ($form->isValid()) {
                     // edit the cart
-                    $cartToEdit->setUser($data['user']);
-                    $cartToEdit->setItem($data['item']);
-                    $cartToEdit->setQuantity($data['quantity']); // set to 1 whatever
+                    $query = $em->createQuery("SELECT c FROM App\Entity\Carts c WHERE c.user = :user AND c.item = :item");
+                    $query->setParameters(array('user' => $data['user'], 'item' => $data['item']));
+                    $matchedCarts = $query->getResult();
+                    // dump($matchedCarts);
 
-                    $em->persist($cartToEdit);
+                    // pas ouf de le mettre avant en cas d'erreur mais on persist après
+
+
+                    if($matchedCarts == null){
+                        // l'user n'a pas déjà l'item dans son panier
+                        $cartToEdit->setUser($data['user']);
+                        $cartToEdit->setItem($data['item']);
+                        $cartToEdit->setQuantity($data['quantity']); // set to 1 whatever
+                        $em->persist($cartToEdit);
+                    }
+                    else {
+                        // l'user a déjà l'item dans son panier, alors il n'y a qu'un seul panier qui le contient à priori
+                        if (count($matchedCarts) != 1) {
+                            throw $this->createNotFoundException('There is a problem with carts.');
+                        } else {
+                            $cart = $matchedCarts[0];
+                            $newQuantity = $cart->getQuantity() + $cartToEdit->getQuantity();
+                            $cart->setQuantity($newQuantity);
+                            $em->persist($cart);
+                        }
+                    }
+
                     $em->flush();
                     $this->addFlash('info', "Cart $id has been edited");
                 }
@@ -251,6 +292,6 @@ class CartsController extends AbstractController
                     'myform' => $myform
                 ]);
             }
-        }
+        }*/
     }
 }

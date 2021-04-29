@@ -13,10 +13,10 @@ use App\Repository\ItemsRepository;
  */
 class Items
 {
-    public function __toString()
+    /*public function __toString()
     {
         return strval( $this->getId() );
-    }
+    }*/
 
     /**
      * @ORM\Id
@@ -38,7 +38,7 @@ class Items
 
     /**
      * @ORM\Column(name="stock", type="integer")
-     *@Assert\GreaterThanOrEqual(0)
+     * @Assert\GreaterThanOrEqual(0)
      */
     private $stock;
 

@@ -35,20 +35,18 @@ class ItemsController extends AbstractController
      */
     public function listAction(): Response
     {
+        // TODO: restrict access to admins
+        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
 
         $em = $this->getDoctrine()->getManager();
         $itemsRepository = $em->getRepository('App\Entity\Items');
         $items = $itemsRepository->findAll();
-
         //dump($items);
-
         return $this->render('items/items_list.html.twig', [
             'controller_name' => 'ItemsController',
             'items' => $items,
         ]);
     }
-
-
 
     /**
      * @Route("/add/COVID", name="items_add_COVID")
@@ -58,9 +56,13 @@ class ItemsController extends AbstractController
         $description = 'coronavirus disease 2019 (COVID-19)';
         $price = 1.99;
         $em = $this->getDoctrine()->getManager();
-        $query = $em->createQuery("SELECT i FROM App\Entity\Items i WHERE i.description = :description and i.price = :price");
-        $query->setParameters(array('description' => $description, 'price' => $price));
-        $matchedItems = $query->getResult();
+        $itemsRepository = $em->getRepository('App\Entity\Items');
+        $matchedItems = $itemsRepository->findBy(array("description" => $description, "price" => $price));
+
+        // faisable aussi avec une requête explicite :
+        // $query = $em->createQuery("SELECT i FROM App\Entity\Items i WHERE i.description = :description and i.price = :price");
+        // $query->setParameters(array('description' => $description, 'price' => $price));
+        // $matchedItems = $query->getResult();
 
         if($matchedItems == null){
             // l'item n'existe pas au même prix
@@ -86,7 +88,7 @@ class ItemsController extends AbstractController
         $em->flush(); // injection physique dans la BD
 
         // on redirige vers une autre action
-        return $this->redirectToRoute('items_list');
+        return $this->redirectToRoute('items_index');
     }
 
     /**
@@ -106,17 +108,16 @@ class ItemsController extends AbstractController
                 // dump($itemToAdd);
 
                 $em = $this->getDoctrine()->getManager();
-                $itemDescription = $item->getDescription();
-                $itemPrice = $item->getPrice();
+                $description = $item->getDescription();
+                $price = $item->getPrice();
 
-                $query = $em->createQuery("SELECT i FROM App\Entity\Items i WHERE i.description = :description and i.price = :price");
-                $query->setParameters(array('description' => $itemDescription, 'price' => $itemPrice));
-                $matchedItems = $query->getResult();
+                $itemsRepository = $em->getRepository('App\Entity\Items');
+                $matchedItems = $itemsRepository->findBy(array("description" => $description, "price" => $price));
 
                 if ($matchedItems != null) {
                     // l'item n'existe pas au même prix
                     $em->persist($item);
-                    $this->addFlash('info', "$itemDescription ($$itemPrice) has been added");
+                    $this->addFlash('info', "$description ($$price) has been added");
                 } else {
                     // l'item existe déjà au même prix
                     if (count($matchedItems) != 1) {
@@ -126,13 +127,15 @@ class ItemsController extends AbstractController
                         $newStock = $item->getStock() + $oldItem->getStock();
                         $oldItem->setStock($newStock);
                         $em->persist($oldItem);
-                        $this->addFlash('info', "$itemDescription ($$itemPrice) was already in base, so stock has increased");
+                        $this->addFlash('info', "$description ($$price) was already in base, so stock has increased");
                     }
                 }
                 $em->flush();
             }
-
-            else {$this->addFlash('info', 'Item hasn\'t been added');}
+            else {
+                $this->addFlash('info', 'Item hasn\'t been added');
+                throw $this->createNotFoundException('Invalid form.');
+            }
             return $this->redirectToRoute("items_index");
         }
         else {
@@ -153,38 +156,43 @@ class ItemsController extends AbstractController
 
         $itemsRepository = $em->getRepository('App\Entity\Items');
         $items = $itemsRepository->findAll();
-        // si il y a au moins un item
-        $form = $this->createForm(ChooseItemType::class, $items);
-        $form->add('send', SubmitType::class, ['label' => 'Choose']);
-        // We create the form, add a submit button.
+        if ($items == null){
+            throw $this->createNotFoundException("please add some items in order to choose");
+        }else {
+            $form = $this->createForm(ChooseItemType::class, $items);
+            $form->add('send', SubmitType::class, ['label' => 'Choose']);
+            // We create the form, add a submit button.
 
-        $data = $form->handleRequest($request)->getData();
-        // dump($data);
+            $data = $form->handleRequest($request)->getData();
+            // dump($data);
 
-        // if we already have a posted form, we treat this one.
-        if ($form->isSubmitted()) {
-            if ($form->isValid()) {
-                $itemID = $data["item"]->getID();
-                $itemDescription =  $data["item"]->getDescription();
-                $actionChosen = $data["action"];
-                $this->addFlash('info', "$itemDescription has been chosen");
+            // if we already have a posted form, we treat this one.
+            if ($form->isSubmitted()) {
+                if ($form->isValid()) {
+                    $itemID = $data["item"]->getID();
+                    $itemDescription = $data["item"]->getDescription();
+                    $actionChosen = $data["action"];
+                    $this->addFlash('info', "$itemDescription has been chosen");
 
-                switch ($actionChosen){
-                    case "edit": return $this->redirectToRoute("items_edit", ["id" => $itemID]);
-                    case "remove": return $this->redirectToRoute("items_remove", ["id" => $itemID]);
-                    default: throw $this->createNotFoundException("$actionChosen/$itemID");
+                    switch ($actionChosen) {
+                        case "edit":
+                            return $this->redirectToRoute("items_edit", ["id" => $itemID]);
+                        case "remove":
+                            return $this->redirectToRoute("items_remove", ["id" => $itemID]);
+                        default:
+                            throw $this->createNotFoundException("$actionChosen/$itemID");
+                    }
+                } else {
+                    $this->addFlash('info', 'Item hasn\'t been chosen');
+                    throw $this->createNotFoundException('Invalid form.');
                 }
             }
-            else {
-                $this->addFlash('info', 'Item hasn\'t been chosen');
-                throw $this->createNotFoundException('Invalid form.');
-            }
+            $myform = $form->createView();
+            return $this->render('items/items_form.html.twig', [
+                'controller_name' => 'itemsController',
+                'myform' => $myform
+            ]);
         }
-        $myform = $form->createView();
-        return $this->render('items/items_form.html.twig', [
-            'controller_name' => 'itemsController',
-            'myform' => $myform
-        ]);
     }
 
     /**
@@ -192,6 +200,7 @@ class ItemsController extends AbstractController
      */
     public function removeAction($id): Response
     {
+        // TODO: restrict access to admins
         /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
 
         // Default is null for id
@@ -201,10 +210,13 @@ class ItemsController extends AbstractController
             $itemsRepository = $em->getRepository('App\Entity\Items');
             $itemToRemove = $itemsRepository->find($id);
             /* si l'item a été trouvé */
-            $em->remove($itemToRemove);
-            $em->flush();
-            /*throw $this->createNotFoundException("nothing to do with item $id");*/
-            $this->addFlash('info', "Item $id has been removed.");
+            if ($itemToRemove != null) {
+                // TODO: check if the item is in carts
+                $em->remove($itemToRemove);
+                $em->flush();
+                $this->addFlash('info', "Item $id has been removed.");
+            }
+            else{throw $this->createNotFoundException('This id is not the pk of a item in this DB.');}
         }
         return $this->redirectToRoute("items_index");
     }
@@ -222,33 +234,56 @@ class ItemsController extends AbstractController
             $em = $this->getDoctrine()->getManager();
             $itemsRepository = $em->getRepository('App\Entity\Items');
             $itemToEdit = $itemsRepository->find($id);
+            if ($itemToEdit == null) {throw $this->createNotFoundException('This id is not the pk of a item in this DB.');}
+            else{
+                $form = $this->createForm(AddItemType::class, $itemToEdit);
+                $form->add('send', SubmitType::class, ['label' => 'Edit']);
+                // We create the form, add a submit button.
+                // dump($request);
+                $form->handleRequest($request);
+                //dump($form);
+                // if we already have a posted form, we treat this one.
+                if ($form->isSubmitted()) {
+                    if ($form->isValid()) {
+                        // edit the item
+                        $description = $itemToEdit->getDescription();
+                        $price = $itemToEdit->getPrice();
 
-            $form = $this->createForm(AddItemType::class, $itemToEdit);
-            $form->add('send', SubmitType::class, ['label' => 'Edit']);
-            // We create the form, add a submit button.
-            // dump($request);
-            $form->handleRequest($request);
-            //dump($form);
-            // if we already have a posted form, we treat this one.
-            if ($form->isSubmitted()) {
-                if ($form->isValid()) {
-                    // edit the item
-                    $em->persist($itemToEdit);
-                    $em->flush();
-                    $this->addFlash('info', "Item $id has been edited");
-                    /* we need to check if we don't get a existing item (same description and price)*/
+                        $itemsRepository = $em->getRepository('App\Entity\Items');
+                        $matchedItems = $itemsRepository->findBy(array("description" => $description, "price" => $price));
+
+                        if ($matchedItems == null) {
+                            // l'item n'existe pas au même prix
+                            $em->persist($itemToEdit);
+                            $this->addFlash('info', "Item $id has been edited");
+                        } else {
+                            // l'item existe déjà au même prix
+                            if (count($matchedItems) != 1) {
+                                throw $this->createNotFoundException('There is a problem with items.');
+                            } else {
+                                $oldItem = $matchedItems[0];
+                                $newStock = $itemToEdit->getStock() + $oldItem->getStock();
+                                $oldItem->setStock($newStock);
+                                $em->persist($oldItem);
+                                $this->addFlash('info', "$description ($$price) was already in base, so stock has increased");
+                            }
+                        }
+                        $em->flush();
+                    }
+                    else {
+                        $this->addFlash('info', 'Item hasn\'t been edited');
+                        throw $this->createNotFoundException('Invalid form.');
+                    }
+                    return $this->redirectToRoute("items_index");
                 }
-                else {$this->addFlash('info', 'Item hasn\'t been edited');}
-                return $this->redirectToRoute("items_list");
-            }
-            else {
-                $myform = $form->createView();
-                return $this->render('items/items_form.html.twig', [
-                    'controller_name' => 'itemsController',
-                    'myform' => $myform
-                ]);
+                else {
+                    $myform = $form->createView();
+                    return $this->render('items/items_form.html.twig', [
+                        'controller_name' => 'itemsController',
+                        'myform' => $myform
+                    ]);
+                }
             }
         }
     }
-
 }

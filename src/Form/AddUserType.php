@@ -28,7 +28,8 @@ class AddUserType extends AbstractType
                 ['label' => 'birthdate'])
             ->add("isAdmin", HiddenType::class,
                 ['empty_data' => false]);
-        dump($options);
+        // this form is going to be used by everyone -> admins shoudn't be build with this
+        //dump($options);
     }
 
     public function configureOptions(OptionsResolver $resolver)
