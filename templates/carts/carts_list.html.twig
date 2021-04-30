@@ -1,0 +1,16 @@
+{% extends 'models/custom.html.twig' %}
+
+{% block view_title %}Display of carts{% endblock %}
+
+{% block view_content %}
+    <p>
+        <ul>
+        {% for cart in carts %}
+            <li>
+                cart {{ cart.id }}<br>
+                cart's owner: {{ cart.user.login }}<br>
+                cart's content: {{ cart.item.description }} (x{{ cart.quantity }})<br>
+            </li>
+        {% endfor %}
+        </ul>
+{% endblock %}

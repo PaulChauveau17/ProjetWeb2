@@ -7,20 +7,30 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class ChooseItemType extends AbstractType
+class ChooseCartType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $actions = array("edit" => "edit", "remove" => "remove");
-        $items = $options['data'];
-        foreach($items as $item) {$itemChoices[$item->getDescription()] = $item;}
+        dump($options);
+        $carts = $options['data'];
+
+        foreach($carts as $cart) {
+            $str = "Owned by ";
+            $str .= $cart->getUser()->getLogin();
+            $str .= " which contains ";
+            $str .= $cart->getItem()->getDescription();
+            $quantity = $cart->getQuantity();
+            $str .= " (x$quantity)";
+            $cartChoices[$str] = $cart;
+        }
 
         $builder
-            ->add("item", ChoiceType::class, [
+            ->add("cart", ChoiceType::class, [
                 'required'=> true,
                 'expanded' => false,
                 'multiple' => false,
-                'choices' => $itemChoices])
+                'choices' => $cartChoices])
             ->add("action", ChoiceType::class, [
             'required'=> true,
             'expanded' => true,
@@ -31,7 +41,7 @@ class ChooseItemType extends AbstractType
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([
-            // 'data_class' => items::class,
+            //'data_class' => Carts::class,
         ]);
     }
 }

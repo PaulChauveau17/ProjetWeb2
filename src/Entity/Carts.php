@@ -21,21 +21,21 @@ class Carts
     private $id;
 
     /**
-     * @ORM\OneToOne(targetEntity=Users::class, cascade={"persist", "remove"})
-     * @ORM\JoinColumn(referencedColumnName="pk", nullable=false)
-     * @ORM\Column(name="utilisateur")
+     * @var Users
+     * @ORM\ManyToOne(targetEntity=Users::class)
+     * @ORM\JoinColumn(name="utilisateur", nullable=false, referencedColumnName="pk")
      */
     private $user;
 
     /**
+     * @var Items
      * @ORM\ManyToOne(targetEntity=Items::class)
-     * @ORM\JoinColumn(nullable=false)
-     * @ORM\Column(name="produit")
+     * @ORM\JoinColumn(name="produit", nullable=false, referencedColumnName="pk")
      */
     private $item;
 
     /**
-     * @ORM\Column(name="quantite", type="integer", nullable=false, options={"default"=0})
+     * @ORM\Column(name="quantite", type="integer", nullable=false, options={"default"=1})
      * @Assert\GreaterThanOrEqual(0)
      */
     private $quantity;
@@ -51,6 +51,11 @@ class Carts
         return $this->user;
     }
 
+    /*public function getUserID(): int
+    { // this getter returns the ID
+        return $this->user;
+    }*/
+
     public function setUser(Users $user): self
     {
         $this->user = $user;
@@ -62,6 +67,11 @@ class Carts
     {
         return $this->item;
     }
+
+    /*public function getItemID(): int
+    {  // this getter returns the ID
+        return $this->item;
+    }*/
 
     public function setItem(?Items $item): self
     {

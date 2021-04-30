@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 use App\Entity\Users;
+use App\Service\UserLog;
 
 /**
  * @package App\Controller
@@ -35,15 +36,19 @@ class UsersController extends AbstractController
      */
     public function listAction(): Response
     {
-        // TODO: restrict access to this action to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        // prod: The server returned a "500 Internal Server Error".
+        // dev: works fine
+        // I don't understand why...
+
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "admin") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as admin.');
+        }
 
         $em = $this->getDoctrine()->getManager();
         $usersRepository = $em->getRepository('App\Entity\Users');
         $users = $usersRepository->findAll();
-
         //dump($users);
-
         return $this->render('users/users_list.html.twig', [
             'controller_name' => 'UsersController',
             'users' => $users,
@@ -55,25 +60,33 @@ class UsersController extends AbstractController
      */
     public function addTotoAction(): Response
     {
-        /* raise an exception if toto is already created */
-        $user = new Users(); // l'utilisateur est encore indépendant de Doctrine
-        $user->setLogin('toto')
-            ->setEncPwd("otot")
-            ->setName("Twopak")
-            ->setSurname("Tom")
-            ->setBirthDate(null)
-            ->setIsAdmin(false);// valeur par défaut mais on force
-        //dump($user);
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() == "not_logged") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged.');
+        }
+
+        $login = "toto";
         $em = $this->getDoctrine()->getManager();
+        $usersRepository = $em->getRepository('App\Entity\Users');
+        $otherToto = $usersRepository->findBy(array("login" => $login));
 
-        $em->persist($user); // Doctrine devient responsable de l'user
-        $em->flush(); // injection physique dans la BD
-        $this->addFlash('info', "toto has been added");
+        if ($otherToto != null){
+            throw $this->createNotFoundException("$login is already in DB");
+        }else{
+            $user = new Users(); // l'utilisateur est encore indépendant de Doctrine
+            $user->setLogin($login)
+                ->setEncPwd('otot')
+                ->setName('Twopak')
+                ->setSurname('Tom')
+                ->setBirthDate(null)
+                ->setIsAdmin(false);
 
-        //dump($user);
+            $em->persist($user); // Doctrine devient responsable de l'user
+            $em->flush(); // injection physique dans la BD
+            $this->addFlash('info', "$login has been added");
 
-        // on redirige vers une autre action
-        return $this->redirectToRoute('users_list');
+            return $this->redirectToRoute("users_index");
+        }
     }
 
     /**
@@ -81,24 +94,36 @@ class UsersController extends AbstractController
      */
     public function addAdminAction(): Response
     {
-        /* raise an exception if admin is already created */
-        $admin = new Users(); // l'utilisateur est encore indépendant de Doctrine
-        $admin->setLogin('admin')
-            ->setEncPwd("nimda")
-            ->setName("Pujadas")
-            ->setSurname("David")
-            ->setBirthDate(null)
-            ->setIsAdmin(true);
-        //dump($admin);
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() == "not_logged") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged.');
+        }
 
+        $login = "admin";
         $em = $this->getDoctrine()->getManager();
+        $usersRepository = $em->getRepository('App\Entity\Users');
+        $otherAdmin = $usersRepository->findBy(array("login" => $login));
 
-        $em->persist($admin); // Doctrine devient responsable de l'user
-        $em->flush(); // injection physique dans la BD
-        $this->addFlash('info', "admin has been added");
+        if ($otherAdmin != null){
+            throw $this->createNotFoundException("$login is already in DB");
+        }else {
+            $admin = new Users(); // l'utilisateur est encore indépendant de Doctrine
+            $admin->setLogin($login)
+                ->setEncPwd('nimda')
+                ->setName('Pujadas')
+                ->setSurname('David')
+                ->setBirthDate(null)
+                ->setIsAdmin(true);
+            //dump($admin);
 
-        // on redirige vers une autre action
-        return $this->redirectToRoute('users_list');
+            $em = $this->getDoctrine()->getManager();
+            $em->persist($admin); // Doctrine devient responsable de l'user
+            $em->flush(); // injection physique dans la BD
+            $this->addFlash('info', "$login has been added");
+
+            // on redirige vers une autre action
+            return $this->redirectToRoute("users_index");
+        }
     }
 
     /**
@@ -106,24 +131,26 @@ class UsersController extends AbstractController
      */
     public function addWithFormAction(Request $request): Response
     {
+        // you can access to this even if you're not logged in order to create an account
+
         $form = $this->createForm(AddUserType::class);
         $form->add('send', SubmitType::class, ['label' => 'Add']);
         // We create the form, add a submit button.
-        // dump($request);
-        $userToAdd = $form->handleRequest($request)->getData();
-        // dump($form);
-        dump($userToAdd);
+        $userToAdd = $form->handleRequest($request)->getData(); // doit être fait avant la conditionnelle
 
         // if we already have a posted form, we treat this one.
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
-                $em = $this->getDoctrine()->getManager();
                 $userLogin = $userToAdd->getLogin();
+                $em = $this->getDoctrine()->getManager();
+                // Doctrine will send an error if the login is already used
                 $em->persist($userToAdd);
                 $em->flush();
                 $this->addFlash('info', "$userLogin as been added");
+            }else {
+                $this->addFlash('info', 'User hasn\'t been added');
+                throw $this->createNotFoundException('Invalid form.');
             }
-            else {$this->addFlash('info', 'User hasn\'t been added');}
             return $this->redirectToRoute("users_index");
         }
         else {
@@ -140,47 +167,52 @@ class UsersController extends AbstractController
      */
     public function chooseAction(Request $request): Response
     {
-        $em = $this->getDoctrine()->getManager();
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() == "not_logged") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged.');
+        }
 
+        $em = $this->getDoctrine()->getManager();
         $usersRepository = $em->getRepository('App\Entity\Users');
         $users = $usersRepository->findAll();
-        // si il y a au moins un user
-        // dump($users);
-        $form = $this->createForm(ChooseUserType::class, $users);
-        $form->add('send', SubmitType::class, ['label' => 'Choose']);
-        // We create the form, add a submit button.
 
-        $data = $form->handleRequest($request)->getData();
-        // dump($data);
+        if ($users == null){
+            throw $this->createNotFoundException("please add some users in order to choose");
+        }else{
+            $form = $this->createForm(ChooseUserType::class, $users);
+            $form->add('send', SubmitType::class, ['label' => 'Choose']);
+            // We create the form, add a submit button.
 
-        // if we already have a posted form, we treat this one.
-        if ($form->isSubmitted()) {
-            if ($form->isValid()) {
-                $userID = $data["user"]->getID();
-                $userLogin =  $data["user"]->getLogin();
-                $actionChosen = $data["action"];
-                $this->addFlash('info', "$userLogin has been chosen");
+            $data = $form->handleRequest($request)->getData();
+            // dump($data);
+            // if we already have a posted form, we treat this one.
+            if ($form->isSubmitted()) {
+                if ($form->isValid()) {
+                    $actionChosen = $data["action"];
+                    $userID = $data["user"]->getID();
+                    $userLogin = $data["user"]->getLogin();
+                    $this->addFlash('info', "$userLogin has been chosen");
 
-                switch ($actionChosen){
-                    case "edit": return $this->redirectToRoute("users_edit", ["id" => $userID]);
-                    case "remove": return $this->redirectToRoute("users_remove", ["id" => $userID]);
-                    case "show": return $this->render('users/users_list.html.twig', [
-                        'controller_name' => 'UsersController',
-                        'users' => array($data["user"])
-                    ]); /* pas super propre.. */
-                    default: throw $this->createNotFoundException("$actionChosen/$userLogin");
+                    switch ($actionChosen) {
+                        case "edit":
+                            return $this->redirectToRoute("users_edit", ["id" => $userID]);
+                        case "remove":
+                            return $this->redirectToRoute("users_remove", ["id" => $userID]);
+                        default:
+                            throw $this->createNotFoundException("$actionChosen/$userID");
+                    }
+                } else{
+                    $this->addFlash('info', 'User hasn\'t been chosen');
+                    throw $this->createNotFoundException('Invalid form.');
                 }
-            }
-            else {
-                $this->addFlash('info', 'User hasn\'t been chosen');
-                throw $this->createNotFoundException('Invalid form.');
+            } else{
+                $myform = $form->createView();
+                return $this->render('users/users_form.html.twig', [
+                    'controller_name' => 'usersController',
+                    'myform' => $myform
+                ]);
             }
         }
-        $myform = $form->createView();
-        return $this->render('users/users_form.html.twig', [
-            'controller_name' => 'usersController',
-            'myform' => $myform
-        ]);
     }
 
     /**
@@ -188,7 +220,10 @@ class UsersController extends AbstractController
      */
     public function removeAction($id): Response
     {
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "admin") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as admin.');
+        }
 
         // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a user id.');}
@@ -196,10 +231,22 @@ class UsersController extends AbstractController
             $em = $this->getDoctrine()->getManager();
             $usersRepository = $em->getRepository('App\Entity\Users');
             $userToRemove =  $usersRepository->find($id);
-            $em->remove($userToRemove);
-            $em->flush();
-            /*throw $this->createNotFoundException("nothing to do with user $id");*/
-            $this->addFlash('info', "User $id has been removed.");
+            if ($userToRemove != null) {
+                // TODO: check if the user has carts
+                $cartsRepository = $em->getRepository('App\Entity\Carts');
+                $carts = $cartsRepository->findAll();
+                foreach ($carts as $cart){
+                    if ($cart->getUser() == $userToRemove){
+                        $userLogin = $userToRemove->getLogin();
+                        throw $this->createNotFoundException("Not allowed: $userLogin has at least a cart.");
+                    }
+                }
+                // else:
+                $em->remove($userToRemove);
+                $em->flush();
+                $this->addFlash('info', "User $id has been removed.");
+            }
+            else{throw $this->createNotFoundException('This id is not the pk of a user in this DB.');}
         }
         return $this->redirectToRoute("users_index");
     }
@@ -209,7 +256,10 @@ class UsersController extends AbstractController
      */
     public function editAction($id, Request $request): Response
     {
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "admin") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as admin.');
+        }
 
         // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a user id.');}
@@ -218,6 +268,8 @@ class UsersController extends AbstractController
             $usersRepository = $em->getRepository('App\Entity\Users');
             $userToEdit =  $usersRepository->find($id);
 
+            if ($userToEdit == null) {throw $this->createNotFoundException('This id is not the pk of a user in this DB.');}
+            // login is unique so an exception is gonna be raised by Doctrine if it already exist
             $form = $this->createForm(AddUserType::class, $userToEdit);
             $form->add('send', SubmitType::class, ['label' => 'Edit']);
             // We create the form, add a submit button.
@@ -228,11 +280,15 @@ class UsersController extends AbstractController
             if ($form->isSubmitted()) {
                 if ($form->isValid()) {
                     // edit the guy
+                    // assuming we can edit an user which has carts
                     $em->persist($userToEdit);
                     $em->flush();
                     $this->addFlash('info', "User $id has been edited");
                 }
-                else {$this->addFlash('info', 'User hasn\'t been edited');}
+                else {
+                    $this->addFlash('info', 'User hasn\'t been edited');
+                    throw $this->createNotFoundException('Invalid form.');
+                }
                 return $this->redirectToRoute("users_list");
             }
             else {
@@ -244,5 +300,4 @@ class UsersController extends AbstractController
             }
         }
     }
-
 }
