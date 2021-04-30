@@ -14,13 +14,20 @@ use Symfony\Component\Routing\Annotation\Route;
  **/
 class AccountController extends AbstractController
 { // this could be done way better
+
+    // utilisé seulement pour la construction du menu (appellé par custom.html.twig)
     public function buildMenuAction(): Response
     {
         $log = new UserLog($this->getParameter('param_auth'));
         $status = $log->getStatus();
 
+        $em = $this->getDoctrine()->getManager();
+        $itemsRepository = $em->getRepository('App\Entity\Items');
+        $nbItems = count($itemsRepository->findAll()); // probablement pas très opti
+
         return $this->render('models/_menu.html.twig', [
             'status' => $status,
+            'nbItems' => $nbItems,
         ]);
     }
 
