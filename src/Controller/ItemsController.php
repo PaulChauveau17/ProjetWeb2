@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Form\ChooseItemType;
 use App\Form\AddItemType;
+use App\Service\UserLog;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,8 +36,10 @@ class ItemsController extends AbstractController
      */
     public function listAction(): Response
     {
-        // TODO: restrict access to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
 
         $em = $this->getDoctrine()->getManager();
         $itemsRepository = $em->getRepository('App\Entity\Items');
@@ -53,6 +56,11 @@ class ItemsController extends AbstractController
      */
     public function addCOVIDAction(): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
+
         $description = 'coronavirus disease 2019 (COVID-19)';
         $price = 1.99;
         $em = $this->getDoctrine()->getManager();
@@ -96,16 +104,20 @@ class ItemsController extends AbstractController
      */
     public function addWithFormAction(Request $request): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
+
         $form = $this->createForm(AddItemType::class);
         $form->add('send', SubmitType::class, ['label' => 'Add']);
         // We create the form, add a submit button.
-        // dump($request);
+        $item = $form->handleRequest($request)->getData();
 
         // if we already have a posted form, we treat this one.
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
-                $item = $form->handleRequest($request)->getData();
-                // dump($itemToAdd);
+                dump($item);
 
                 $em = $this->getDoctrine()->getManager();
                 $description = $item->getDescription();
@@ -114,7 +126,7 @@ class ItemsController extends AbstractController
                 $itemsRepository = $em->getRepository('App\Entity\Items');
                 $matchedItems = $itemsRepository->findBy(array("description" => $description, "price" => $price));
 
-                if ($matchedItems != null) {
+                if ($matchedItems == null) {
                     // l'item n'existe pas au même prix
                     $em->persist($item);
                     $this->addFlash('info', "$description ($$price) has been added");
@@ -131,12 +143,12 @@ class ItemsController extends AbstractController
                     }
                 }
                 $em->flush();
+                return $this->redirectToRoute("items_index");
             }
             else {
                 $this->addFlash('info', 'Item hasn\'t been added');
                 throw $this->createNotFoundException('Invalid form.');
             }
-            return $this->redirectToRoute("items_index");
         }
         else {
             $myform = $form->createView();
@@ -152,6 +164,11 @@ class ItemsController extends AbstractController
      */
     public function chooseAction(Request $request): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
+
         $em = $this->getDoctrine()->getManager();
 
         $itemsRepository = $em->getRepository('App\Entity\Items');
@@ -200,8 +217,10 @@ class ItemsController extends AbstractController
      */
     public function removeAction($id): Response
     {
-        // TODO: restrict access to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
 
         // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a item id.');}
@@ -232,7 +251,10 @@ class ItemsController extends AbstractController
      */
     public function editAction($id, Request $request): Response
     {
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
 
         // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a item id.');}

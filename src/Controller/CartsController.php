@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Form\ChooseCartType;
 use App\Form\ShopCartType;
+use App\Service\UserLog;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
@@ -37,8 +38,10 @@ class CartsController extends AbstractController
      */
     public function listAction(): Response
     {
-        // TODO: restrict access to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
 
         $em = $this->getDoctrine()->getManager();
         $cartsRepository = $em->getRepository('App\Entity\Carts');
@@ -67,6 +70,11 @@ class CartsController extends AbstractController
      */
     public function shopWithFormAction(Request $request): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
+
         $em = $this->getDoctrine()->getManager();
 
         $usersRepository = $em->getRepository('App\Entity\Users');
@@ -142,6 +150,11 @@ class CartsController extends AbstractController
      */
     public function chooseAction(Request $request): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
+
         $em = $this->getDoctrine()->getManager();
 
         $cartsRepository = $em->getRepository('App\Entity\Carts');
@@ -185,8 +198,10 @@ class CartsController extends AbstractController
      */
     public function removeAction($id): Response
     {
-        // TODO: restrict access to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
 
         // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a cart id.');}
@@ -219,10 +234,15 @@ class CartsController extends AbstractController
      */
     public function editAction($id, Request $request): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "user") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as user.');
+        }
+
         if ($id == null) {throw $this->createNotFoundException('Please choose a cart id.');}
         else {
             throw $this->createNotFoundException('Please delete the cart and then create another one.');
-            // there was a too long and complicated function here before
+            // there was a too long and complicated script here before
         }
     }
 }

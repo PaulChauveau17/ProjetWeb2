@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 use App\Entity\Users;
+use App\Service\UserLog;
 
 /**
  * @package App\Controller
@@ -35,8 +36,14 @@ class UsersController extends AbstractController
      */
     public function listAction(): Response
     {
-        // TODO: restrict access to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        // prod: The server returned a "500 Internal Server Error".
+        // dev: works fine
+        // I don't understand why...
+
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "admin") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as admin.');
+        }
 
         $em = $this->getDoctrine()->getManager();
         $usersRepository = $em->getRepository('App\Entity\Users');
@@ -53,6 +60,11 @@ class UsersController extends AbstractController
      */
     public function addTotoAction(): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() == "not_logged") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged.');
+        }
+
         $login = "toto";
         $em = $this->getDoctrine()->getManager();
         $usersRepository = $em->getRepository('App\Entity\Users');
@@ -82,6 +94,11 @@ class UsersController extends AbstractController
      */
     public function addAdminAction(): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() == "not_logged") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged.');
+        }
+
         $login = "admin";
         $em = $this->getDoctrine()->getManager();
         $usersRepository = $em->getRepository('App\Entity\Users');
@@ -114,6 +131,8 @@ class UsersController extends AbstractController
      */
     public function addWithFormAction(Request $request): Response
     {
+        // you can access to this even if you're not logged in order to create an account
+
         $form = $this->createForm(AddUserType::class);
         $form->add('send', SubmitType::class, ['label' => 'Add']);
         // We create the form, add a submit button.
@@ -124,6 +143,7 @@ class UsersController extends AbstractController
             if ($form->isValid()) {
                 $userLogin = $userToAdd->getLogin();
                 $em = $this->getDoctrine()->getManager();
+                // Doctrine will send an error if the login is already used
                 $em->persist($userToAdd);
                 $em->flush();
                 $this->addFlash('info', "$userLogin as been added");
@@ -147,6 +167,11 @@ class UsersController extends AbstractController
      */
     public function chooseAction(Request $request): Response
     {
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() == "not_logged") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged.');
+        }
+
         $em = $this->getDoctrine()->getManager();
         $usersRepository = $em->getRepository('App\Entity\Users');
         $users = $usersRepository->findAll();
@@ -189,14 +214,16 @@ class UsersController extends AbstractController
             }
         }
     }
-    
+
     /**
      * @Route("/remove/{id?}", name="users_remove", requirements = {"id" = "[1-9]\d*"})
      */
     public function removeAction($id): Response
     {
-        // TODO: restrict access to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "admin") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as admin.');
+        }
 
         // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a user id.');}
@@ -229,8 +256,10 @@ class UsersController extends AbstractController
      */
     public function editAction($id, Request $request): Response
     {
-        // TODO: restrict access to admins
-        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
+        $log = new UserLog($this->getParameter('param_auth'));
+        if ($log->getStatus() != "admin") {
+            throw $this->createNotFoundException('Permission denied: You have to be logged as admin.');
+        }
 
         // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a user id.');}
