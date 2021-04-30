@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 use App\Entity\Carts;
+// use App\Entity\Items;
+// use App\Entity\Users;
 
 /**
  * @package App\Controller
@@ -35,12 +37,19 @@ class CartsController extends AbstractController
      */
     public function listAction(): Response
     {
+        // TODO: restrict access to admins
+        /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
 
         $em = $this->getDoctrine()->getManager();
         $cartsRepository = $em->getRepository('App\Entity\Carts');
         $carts = $cartsRepository->findAll();
-        // dump($carts);
 
+        return $this->render('carts/carts_list.html.twig', [
+            'controller_name' => 'CartsController',
+            'carts' => $carts
+        ]);
+
+        /* old version:
         $usersRepository = $em->getRepository('App\Entity\Users');
         $users = $usersRepository->findAll();
 
@@ -50,7 +59,7 @@ class CartsController extends AbstractController
         return $this->render('carts/carts_list.html.twig', [
             'controller_name' => 'CartsController',
             'carts' => $carts, 'users' => $users, 'items' => $items
-        ]);
+        ]); */
     }
 
     /**
@@ -71,31 +80,29 @@ class CartsController extends AbstractController
         // We create the form, add a submit button.
         // dump($request);
         $data = $form->handleRequest($request)->getData();
+        // $form->handleRequest($request);
         // dump($data);
 
         // if we already have a posted form, we treat this one.
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
+                $item = $data['item'];
+                $user = $data['user'];
+                $quantity = $data["quantity"];
+                if ($item->getStock() < $quantity) {throw $this->createNotFoundException('Stock is insufficient.');}
+                // else :
                 $em = $this->getDoctrine()->getManager();
-                $user =  $data["user"];
-                $item =  $data["item"];
-                $quantity =  $data["quantity"];
-
-                $query = $em->createQuery("SELECT c FROM App\Entity\Carts c WHERE c.user = :user AND c.item = :item");
-                $query->setParameters(array('user' => $user, 'item' => $item));
-                $matchedCarts = $query->getResult();
+                $cartsRepository = $em->getRepository('App\Entity\Carts');
+                $matchedCarts = $cartsRepository->findBy(array("user" => $user, "item" => $item));
                 // dump($matchedCarts);
 
                 if($matchedCarts == null){
                     // l'user n'a pas déjà l'item dans son panier
                     $cart = new Carts();
-                    // $cart->setUser($user->getID()); // ne fonctionne pas (prbl setteur dans Users)
-                    $cart->setUser($user);
-                    // $cart->setItem($item->getID()); // ne fonctionne pas (prbl setteur dans Items
-                    $cart->setItem($item);
-                    $cart->setQuantity($quantity);
-                }
-                else{
+                    $cart->setUser($user)
+                        ->setItem($item)
+                        ->setQuantity($quantity);
+                } else{
                     // l'user a déjà l'item dans son panier, alors il n'y a qu'un seul panier qui le contient à priori
                     if (count($matchedCarts) != 1) {throw $this->createNotFoundException('There is a problem with carts.');}
                     else{
@@ -104,27 +111,24 @@ class CartsController extends AbstractController
                         $cart->setQuantity($newQuantity);
                     }
                 }
+                // on update le stock de l'item (on a vérifié qu'il y en avait suffisament avant
                 $newStock = $item->getStock() - $quantity;
                 $item->setStock($newStock);
 
                 $em->persist($item);
                 $em->persist($cart);
+                $em->flush();
 
-                // without toString() function in Users and Items
-                // $em->flush(); // Object of class App\Entity\Users could not be converted to string
-
-                // with toString() function in Users and Items
-                $em->flush(); // no problem if the database is not in readonly :)
-
-                $itemDescription = $item->getDescription();
-                $userLogin =  $user->getLogin();
-
-                $this->addFlash('info', "$itemDescription (x$quantity) has been added to cart of $userLogin");
+                $description = $item->getDescription();
+                $login =  $user->getLogin();
+                $this->addFlash('info', "$description (x$quantity) has been added to cart of $login");
+                return $this->redirectToRoute("carts_index");
             }
-            else {$this->addFlash('info', 'Cart hasn\'t been added nor modified');}
-            return $this->redirectToRoute("carts_shop_form");
-        }
-        else {
+            else {
+                $this->addFlash('info', 'Cart hasn\'t been added nor modified');
+                throw $this->createNotFoundException('Invalid form.');
+            }
+        } else {
             $myform = $form->createView();
             return $this->render('carts/carts_form.html.twig', [
                 'controller_name' => 'cartsController',
@@ -142,16 +146,9 @@ class CartsController extends AbstractController
 
         $cartsRepository = $em->getRepository('App\Entity\Carts');
         $carts = $cartsRepository->findAll();
-
-        $usersRepository = $em->getRepository('App\Entity\Users');
-        $users = $usersRepository->findAll();
-
-        $itemsRepository = $em->getRepository('App\Entity\Items');
-        $items = $itemsRepository->findAll();
-
-        $given = array('carts' => $carts, 'users' => $users, 'items' => $items);
-
-        $form = $this->createForm(ChooseCartType::class, $given);
+        if ($carts == null) {throw $this->createNotFoundException("please add some carts in order to choose");}
+        // else:
+        $form = $this->createForm(ChooseCartType::class, $carts);
         $form->add('send', SubmitType::class, ['label' => 'Choose']);
         // We create the form, add a submit button.
 
@@ -188,6 +185,7 @@ class CartsController extends AbstractController
      */
     public function removeAction($id): Response
     {
+        // TODO: restrict access to admins
         /*throw $this->createNotFoundException('Permission denied: You have to be logged.');*/
 
         // Default is null for id
@@ -196,11 +194,12 @@ class CartsController extends AbstractController
             $em = $this->getDoctrine()->getManager();
             $cartsRepository = $em->getRepository('App\Entity\Carts');
             $cartToRemove = $cartsRepository->find($id);
-            if ($cartToRemove != null) {
-                $itemID = $cartToRemove->getItemID();
-                $itemsRepository = $em->getRepository('App\Entity\Items');
-                $item = $itemsRepository->find($itemID); // i don't check if this is not null
 
+            if ($cartToRemove != null) {
+                $item = $cartToRemove->getItem();
+                // It should exist if we can't delete a item which is in a cart
+
+                $description = $item->getDescription();
                 $newStock = $item->getStock() + $cartToRemove->getQuantity();
                 $item->setStock($newStock);
                 $em->persist($item);
@@ -208,9 +207,9 @@ class CartsController extends AbstractController
                 $em->remove($cartToRemove);
                 $em->flush();
                 $this->addFlash('info', "Cart $id has been removed.");
-                $this->addFlash('info', "Item $itemID : stock has raised.");
+                $this->addFlash('info', "$description : stock has raised.");
             }
-            else {throw $this->createNotFoundException('This id is not in the base.');}
+            else {throw $this->createNotFoundException('This id is not the pk of a cart in this DB.');}
         }
         return $this->redirectToRoute("carts_index");
     }
@@ -220,78 +219,10 @@ class CartsController extends AbstractController
      */
     public function editAction($id, Request $request): Response
     {
-        //throw $this->createNotFoundException('Permission denied: You have to be logged.');
-
-        // le top serait d'appeler la fonction d'ajout puis de suppression
-
-        /* Pas opti et pas fini
-        // Default is null for id
         if ($id == null) {throw $this->createNotFoundException('Please choose a cart id.');}
-        else{
-            $em = $this->getDoctrine()->getManager();
-
-            $cartsRepository = $em->getRepository('App\Entity\Carts');
-            $cartToEdit = $cartsRepository->find($id);
-
-            if ($cartToEdit == null) {throw $this->createNotFoundException('This id is not in the base.');}
-
-            $usersRepository = $em->getRepository('App\Entity\Users');
-            $users = $usersRepository->findAll();
-
-            $itemsRepository = $em->getRepository('App\Entity\Items');
-            $items = $itemsRepository->findAll();
-
-            // vu qu'on a pas passé le panier lors de la création du form on a pas les anciennes valeurs -> dommage
-            $form = $this->createForm(ShopCartType::class, array("users" => $users, "items" => $items));
-            $form->add('send', SubmitType::class, ['label' => 'Edit']);
-            // We create the form, add a submit button.
-            // dump($request);
-            $data = $form->handleRequest($request)->getData();
-            dump($cartToEdit);
-            // if we already have a posted form, we treat this one.
-            if ($form->isSubmitted()) {
-                if ($form->isValid()) {
-                    // edit the cart
-                    $query = $em->createQuery("SELECT c FROM App\Entity\Carts c WHERE c.user = :user AND c.item = :item");
-                    $query->setParameters(array('user' => $data['user'], 'item' => $data['item']));
-                    $matchedCarts = $query->getResult();
-                    // dump($matchedCarts);
-
-                    // pas ouf de le mettre avant en cas d'erreur mais on persist après
-
-
-                    if($matchedCarts == null){
-                        // l'user n'a pas déjà l'item dans son panier
-                        $cartToEdit->setUser($data['user']);
-                        $cartToEdit->setItem($data['item']);
-                        $cartToEdit->setQuantity($data['quantity']); // set to 1 whatever
-                        $em->persist($cartToEdit);
-                    }
-                    else {
-                        // l'user a déjà l'item dans son panier, alors il n'y a qu'un seul panier qui le contient à priori
-                        if (count($matchedCarts) != 1) {
-                            throw $this->createNotFoundException('There is a problem with carts.');
-                        } else {
-                            $cart = $matchedCarts[0];
-                            $newQuantity = $cart->getQuantity() + $cartToEdit->getQuantity();
-                            $cart->setQuantity($newQuantity);
-                            $em->persist($cart);
-                        }
-                    }
-
-                    $em->flush();
-                    $this->addFlash('info', "Cart $id has been edited");
-                }
-                else {$this->addFlash('info', 'Cart hasn\'t been edited');}
-                return $this->redirectToRoute("carts_list");
-            }
-            else {
-                $myform = $form->createView();
-                return $this->render('carts/carts_form.html.twig', [
-                    'controller_name' => 'cartsController',
-                    'myform' => $myform
-                ]);
-            }
-        }*/
+        else {
+            throw $this->createNotFoundException('Please delete the cart and then create another one.');
+            // there was a too long and complicated function here before
+        }
     }
 }

@@ -209,9 +209,15 @@ class ItemsController extends AbstractController
             $em = $this->getDoctrine()->getManager();
             $itemsRepository = $em->getRepository('App\Entity\Items');
             $itemToRemove = $itemsRepository->find($id);
-            /* si l'item a été trouvé */
             if ($itemToRemove != null) {
-                // TODO: check if the item is in carts
+                $cartsRepository = $em->getRepository('App\Entity\Carts');
+                $carts = $cartsRepository->findAll();
+                $nb = 0;
+                foreach ($carts as $cart){
+                    if ($cart->getItem() == $itemToRemove) {$nb++;}
+                    }
+                if ($nb != 0) {throw $this->createNotFoundException("Not allowed: this item is in $nb cart(s).");}
+                // else:
                 $em->remove($itemToRemove);
                 $em->flush();
                 $this->addFlash('info', "Item $id has been removed.");
@@ -246,6 +252,7 @@ class ItemsController extends AbstractController
                 if ($form->isSubmitted()) {
                     if ($form->isValid()) {
                         // edit the item
+                        // assuming we can edit an item which is in carts
                         $description = $itemToEdit->getDescription();
                         $price = $itemToEdit->getPrice();
 
@@ -262,10 +269,10 @@ class ItemsController extends AbstractController
                                 throw $this->createNotFoundException('There is a problem with items.');
                             } else {
                                 $oldItem = $matchedItems[0];
-                                $newStock = $itemToEdit->getStock() + $oldItem->getStock();
+                                $newStock = $itemToEdit->getStock();
                                 $oldItem->setStock($newStock);
                                 $em->persist($oldItem);
-                                $this->addFlash('info', "$description ($$price) was already in base, so stock has increased");
+                                $this->addFlash('info', "$description ($$price) was already in base, has been set to the new value.");
                             }
                         }
                         $em->flush();

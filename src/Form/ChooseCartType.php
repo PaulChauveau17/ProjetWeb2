@@ -12,27 +12,17 @@ class ChooseCartType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $actions = array("edit" => "edit", "remove" => "remove");
-        $users = $options['data']['users'];
-        $carts = $options['data']['carts'];
-        $items = $options['data']['items'];
+        dump($options);
+        $carts = $options['data'];
 
         foreach($carts as $cart) {
             $str = "Owned by ";
-            foreach ($users as $user) {
-                if ($user->getID() == $cart->getUserID()) {
-                    $str .= $user->getLogin();
-                }
-            }
+            $str .= $cart->getUser()->getLogin();
             $str .= " which contains ";
-            foreach ($items as $item) {
-                if ($item->getID() == $cart->getItemID()) {
-                    $str .= $item->getDescription();
-                }
-            }
+            $str .= $cart->getItem()->getDescription();
             $quantity = $cart->getQuantity();
             $str .= " (x$quantity)";
             $cartChoices[$str] = $cart;
-
         }
 
         $builder
@@ -51,7 +41,7 @@ class ChooseCartType extends AbstractType
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([
-            // 'data_class' => Users::class,
+            //'data_class' => Carts::class,
         ]);
     }
 }

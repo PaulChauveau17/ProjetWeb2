@@ -1,22 +1,15 @@
 {% extends 'models/custom.html.twig' %}
 
-{% block view_title %}Display of carts per user{% endblock %}
+{% block view_title %}Display of carts{% endblock %}
 
 {% block view_content %}
     <p>
         <ul>
-        {% for user in users %}
+        {% for cart in carts %}
             <li>
-                {{ user.login }}'s item(s):
-                {% for cart in carts %}
-                    {% if cart.userID == user.id %}
-                        {% for item in items %}
-                            {% if cart.itemID == item.id %}
-                                    {{ item.description }} (x{{ cart.quantity }}) ;
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                {% endfor %}
+                cart {{ cart.id }}<br>
+                cart's owner: {{ cart.user.login }}<br>
+                cart's content: {{ cart.item.description }} (x{{ cart.quantity }})<br>
             </li>
         {% endfor %}
         </ul>

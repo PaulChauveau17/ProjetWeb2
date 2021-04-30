@@ -189,7 +189,7 @@ class UsersController extends AbstractController
             }
         }
     }
-
+    
     /**
      * @Route("/remove/{id?}", name="users_remove", requirements = {"id" = "[1-9]\d*"})
      */
@@ -206,6 +206,15 @@ class UsersController extends AbstractController
             $userToRemove =  $usersRepository->find($id);
             if ($userToRemove != null) {
                 // TODO: check if the user has carts
+                $cartsRepository = $em->getRepository('App\Entity\Carts');
+                $carts = $cartsRepository->findAll();
+                foreach ($carts as $cart){
+                    if ($cart->getUser() == $userToRemove){
+                        $userLogin = $userToRemove->getLogin();
+                        throw $this->createNotFoundException("Not allowed: $userLogin has at least a cart.");
+                    }
+                }
+                // else:
                 $em->remove($userToRemove);
                 $em->flush();
                 $this->addFlash('info', "User $id has been removed.");
@@ -242,6 +251,7 @@ class UsersController extends AbstractController
             if ($form->isSubmitted()) {
                 if ($form->isValid()) {
                     // edit the guy
+                    // assuming we can edit an user which has carts
                     $em->persist($userToEdit);
                     $em->flush();
                     $this->addFlash('info', "User $id has been edited");
