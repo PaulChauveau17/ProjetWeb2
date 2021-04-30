@@ -7,7 +7,7 @@ parameters:
     # set to 0 for anonymous
     # set to 1 for user
     # set to 2 for admin
-    param_auth: 2
+    param_auth: 0
 
 services:
     # default configuration for services in *this* file
