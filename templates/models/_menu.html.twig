@@ -1,0 +1,23 @@
+    Number of products available : {{ nbItems }}<br>
+{% if status == 'not_logged' %}
+    <img src="../../public/img/header/catto.jpg" alt="not_logged logo" width="245" height="245">
+    <li><a href="{{ path("account_log_in") }}">Log in</a></li>
+    <li><a href="{{ path("test_index") }}">Test page</a></li>
+    <li><a href="{{ path("users_add_form") }}">Create an account</a></li>
+{% elseif status == 'admin' %}
+    <img src="../../public/img/header/pwet.jpg" alt="admin logo" width="245" height="245">
+    <li><a href="{{ path("account_log_out") }}">Log Out</a></li>
+    <li><a href="{{ path("test_index") }}">Test page</a></li>
+    <li><a href="{{ path("users_choose") }}">Edit an user</a></li>
+    <li><a href="{{ path("items_add_form") }}">Add an item</a></li> {# this will raise an error: only user can add items #}
+    <li><a href="https://fr.wikipedia.org/wiki/Amour_et_Amnésie">Stack overflow</a></li>
+{% elseif status == 'user' %}
+    <img src="../../public/img/header/kwak.jpg" alt="user logo" width="245" height="245">
+    <li><a href="{{ path("account_log_out") }}">Log Out</a></li>
+    <li><a href="{{ path("test_index") }}">Test page</a></li>
+    <li><a href="{{ path("users_choose") }}">Edit your profile</a></li> {# actually you can choose everybody but edit nor remove nobody #}
+    <li><a href="{{ path("items_list") }}">List of available items</a></li>
+    <li><a href="{{ path("carts_shop_form") }}">Shop</a></li>
+{% else %}
+    Authentification issue, please check '_menu.html.twig'.
+{% endif %}

@@ -256,6 +256,7 @@ class UsersController extends AbstractController
      */
     public function editAction($id, Request $request): Response
     {
+        // With a real auth system we could raise an exception only if the user don't edit its own profile
         $log = new UserLog($this->getParameter('param_auth'));
         if ($log->getStatus() != "admin") {
             throw $this->createNotFoundException('Permission denied: You have to be logged as admin.');
